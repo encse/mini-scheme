@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>TypeScript HTML App</title>
+    <link rel="stylesheet" href="app.css" type="text/css" />
+    <style>[ng-cloak] { display: none; }</style>
+    <style>
+        textarea {
+			width: 80%;
+			margin: 0 auto;
+			border: 2px solid #666;
+			padding: 12px;
+			font-family: consolas, monospace;
+			height: 200px;
+		    overflow: auto;
+			display: block;
+			background: #333;
+			color: #ccc;
+			
+		}
+         
+    </style>
+</head>
+<body ng-app="sicp">
+<section ng-controller="TodoCtrl">
+    <textarea ng-model="name" ng-keydown="clickMe($event)">
+        
+    </textarea>
+    <p>{{clickEvent}}</p>
+</section>
+
+<script src="node_modules/angular/angular.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
