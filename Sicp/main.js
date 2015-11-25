@@ -5,7 +5,7 @@ var SicpEditor = (function () {
         this.outputId = outputId;
         require(['ace/ace'], function (ace) {
             _this.editor = ace.edit("editor");
-            _this.editor.setTheme('ace/theme/monokai');
+            _this.editor.setTheme('ace/theme/github');
             _this.editor.getSession().setMode('ace/mode/sicp');
             _this.editor.commands.addCommand({
                 name: 'Evaluate',

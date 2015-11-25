@@ -5,10 +5,10 @@ define("ace/mode/sicp_highlight_rules", ["require", "exports", "module", "ace/li
     var TextHighlightRules = require("./text_highlight_rules").TextHighlightRules;
 
     var SicpHighlightRules = function () {
-        var keywordControl = "define|case|do|let|loop|if|else|when";
-        var keywordOperator = "eq|neq|and|or";
-        var constantLanguage = "null|nil";
-        var supportFunctions = "cons|car|cdr|cond|lambda|format|setq|setf|quote|eval|append|list|listp|memberp|t|load|progn";
+        var keywordControl = "define|case|if|else";
+        var keywordOperator = ""; //"eq|neq|and|or";
+        var constantLanguage = ""; //"null|nil";
+        var supportFunctions = "cons|car|cdr|cond|lambda|set!|quote";
 
         var keywordMapper = this.createKeywordMapper({
             "keyword.control": keywordControl,

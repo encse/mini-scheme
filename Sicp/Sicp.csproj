@@ -24,7 +24,7 @@
   <ItemGroup>
     <Content Include="ace\src\ace.js" />
     <Content Include="ace\src\mode-sicp.js" />
-    <Content Include="ace\src\theme-monokai.js" />
+    <Content Include="ace\src\theme-github.js" />
     <Content Include="app.css" />
     <Content Include="index.html" />
     <Content Include="web.config" />
