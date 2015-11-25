@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "angular": "^1.4.8"
+    "ace-editor-builds": "^1.2.0",
+    "requirejs": "^2.1.22"
   }
 }

@@ -5,33 +5,45 @@
     <meta charset="utf-8" />
     <title>TypeScript HTML App</title>
     <link rel="stylesheet" href="app.css" type="text/css" />
-    <style>[ng-cloak] { display: none; }</style>
+   
     <style>
-        textarea {
-			width: 80%;
-			margin: 0 auto;
-			border: 2px solid #666;
-			padding: 12px;
-			font-family: consolas, monospace;
-			height: 200px;
-		    overflow: auto;
-			display: block;
-			background: #333;
-			color: #ccc;
-			
-		}
+      #editor { 
+        position: relative;
+       
+          height: 400px;
+          width: 80%;
+          margin: 0 auto;
+        }
          
     </style>
 </head>
-<body ng-app="sicp">
-<section ng-controller="TodoCtrl">
-    <textarea ng-model="name" ng-keydown="clickMe($event)">
-        
-    </textarea>
-    <p>{{clickEvent}}</p>
-</section>
+<body>
+<h1>blblsa</h1>
+<div id="editor">(define fact
+    (lambda(x)
+        (cond
+            ((= x 1) 1)
+            (else (* x(fact(- x 1))))
+        )
+    )
+)
+(fact 5)
+(fact 4)</div>
+<div id="output"></div>
+<script src="node_modules/requirejs/require.js"></script>
 
-<script src="node_modules/angular/angular.js"></script>
+<script>
+
+    require.config({
+        paths: {
+            ace: "ace/src"
+        }
+    });
+
+   
+  
+</script>
 <script src="main.js"></script>
+
 </body>
 </html>
