@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>TypeScript HTML App</title>
+    <link rel="stylesheet" href="css/app.css" type="text/css" />
+    <style>
+        #editor {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="top">
+            <div id="top-content">
+                <div id="logo">
+                    <h1>
+                        <a href="http://csokavar.hu/projects/minischeme">/mini-scheme</a>
+                    </h1>
+                </div>
+            </div>
+        </div> <!-- top -->
+
+        <div id="main">
+            <div id="main-content">
+                <h2>Mini scheme</h2>
+                <pre id="editor">(define fact
+    (lambda(x)
+        (cond
+            ((= x 1) 1)
+            (else (* x(fact(- x 1))))
+        )
+    )
+)
+(fact 5)
+(fact 4)
+            </pre>
+                <div id="output"></div>
+            </div> <!-- main-content -->
+        </div> <!-- main -->
+
+
+        <div id="footer">
+            <p><a href="http://www.csokavar.hu/">Encsé Művek</a> - 2015</p>
+            <p>Kapcsolat: <a href="mailto:encse@csokavar.hu">encse@csokavar.hu</a></p>
+        </div>
+
+    </div> <!--container -->
+
+    <script src="lib/requirejs/require.js"></script>
+    <script>
+        require.config({
+            paths: {
+                ace: "js/ace"
+            }
+        });
+    </script>
+    <script src="js/app.js"></script>
+    <script>
+        new Editor.SicpEditor("editor", "output");
+    </script>
+</body>
+</html>

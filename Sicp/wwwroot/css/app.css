@@ -1,0 +1,127 @@
+﻿
+@import url(http://fonts.googleapis.com/css?family=Slabo+27px|Gentium+Book+Basic&subset=latin,latin-ext);
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html,
+body {
+   margin:0;
+   padding:0;
+   height:100%;
+}
+body{
+	  font-family: verdana, Arial, Helvetica, sans-serif;
+}
+
+h1{
+	font-family: 'Gentium Book Basic', serif;
+	font-size: 60px;
+	padding: 20px 0;
+
+}
+h1 a{
+	color:white;
+	text-decoration: none;
+
+}
+h2 {
+	font-family: 'Gentium Book Basic', serif;
+	font-size: 60px;
+	text-align: center;
+	line-height: 100px;
+}
+h3 {
+	font-size: 22px;
+}
+p{
+	 
+	line-height: 25px;
+	font-size: 17px;
+	margin: 10px 0;
+}
+
+form, .form{
+	margin: 20px 0 15px 0;
+    display: block;
+    text-align: center;
+}
+input[type=text] {
+    width: 300px;
+    font-size: 21px;
+    font-family: arial;
+    padding: 3px;
+}
+
+input[type=submit], input[type=button] {
+    width: 100px;
+    font-size: 22px;
+    font-family: arial;
+}
+
+#top{
+background-color: hsl(34, 53%, 82%);
+background-image: repeating-linear-gradient(45deg, transparent 5px, hsla(197, 62%, 11%, 0.5) 5px, hsla(197, 62%, 11%, 0.5) 10px,                  
+  hsla(5, 53%, 63%, 0) 10px, hsla(5, 53%, 63%, 0) 35px, hsla(5, 53%, 63%, 0.5) 35px, hsla(5, 53%, 63%, 0.5) 40px,
+  hsla(197, 62%, 11%, 0.5) 40px, hsla(197, 62%, 11%, 0.5) 50px, hsla(197, 62%, 11%, 0) 50px, hsla(197, 62%, 11%, 0) 60px,                
+  hsla(5, 53%, 63%, 0.5) 60px, hsla(5, 53%, 63%, 0.5) 70px, hsla(35, 91%, 65%, 0.5) 70px, hsla(35, 91%, 65%, 0.5) 80px,
+  hsla(35, 91%, 65%, 0) 80px, hsla(35, 91%, 65%, 0) 90px, hsla(5, 53%, 63%, 0.5) 90px, hsla(5, 53%, 63%, 0.5) 110px,
+  hsla(5, 53%, 63%, 0) 110px, hsla(5, 53%, 63%, 0) 120px, hsla(197, 62%, 11%, 0.5) 120px, hsla(197, 62%, 11%, 0.5) 140px       
+  ),
+repeating-linear-gradient(135deg, transparent 5px, hsla(197, 62%, 11%, 0.5) 5px, hsla(197, 62%, 11%, 0.5) 10px, 
+  hsla(5, 53%, 63%, 0) 10px, hsla(5, 53%, 63%, 0) 35px, hsla(5, 53%, 63%, 0.5) 35px, hsla(5, 53%, 63%, 0.5) 40px,
+  hsla(197, 62%, 11%, 0.5) 40px, hsla(197, 62%, 11%, 0.5) 50px, hsla(197, 62%, 11%, 0) 50px, hsla(197, 62%, 11%, 0) 60px,                
+  hsla(5, 53%, 63%, 0.5) 60px, hsla(5, 53%, 63%, 0.5) 70px, hsla(35, 91%, 65%, 0.5) 70px, hsla(35, 91%, 65%, 0.5) 80px,
+  hsla(35, 91%, 65%, 0) 80px, hsla(35, 91%, 65%, 0) 90px, hsla(5, 53%, 63%, 0.5) 90px, hsla(5, 53%, 63%, 0.5) 110px,
+  hsla(5, 53%, 63%, 0) 110px, hsla(5, 53%, 63%, 0) 140px, hsla(197, 62%, 11%, 0.5) 140px, hsla(197, 62%, 11%, 0.5) 160px       
+);
+}
+
+#container{
+	min-height: 100%;
+	position:relative;
+}
+
+#footer{
+	position: absolute;
+	bottom:0;
+	background-color: #444;
+
+	height: 100px;
+	width: 100%;
+	text-align: center;
+}
+#footer p{
+	color: #fff;
+}
+#footer a{
+	color: #aaa;
+	
+}
+#main{
+	background: #e1e1e1; /* Old browsers */
+	background: -moz-linear-gradient(top,  #e1e1e1 0%, #ffffff 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#e1e1e1), color-stop(100%,#ffffff)); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top,  #e1e1e1 0%,#ffffff 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top,  #e1e1e1 0%,#ffffff 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top,  #e1e1e1 0%,#ffffff 100%); /* IE10+ */
+	background: linear-gradient(to bottom,  #e1e1e1 0%,#ffffff 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e1e1e1', endColorstr='#ffffff',GradientType=0 ); /* IE6-9 */
+	background-size: 40px 40px;
+	background-repeat: repeat-x;
+
+	
+	padding-bottom: 120px;
+	overflow: hidden;
+	
+}
+
+#main-content, #top-content{
+	width:800px;
+	max-width: 100%;
+	margin:0 auto;
+	padding: 0 20px;
+}

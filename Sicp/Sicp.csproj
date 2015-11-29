@@ -22,18 +22,40 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ace\src\ace.js" />
-    <Content Include="ace\src\mode-sicp.js" />
-    <Content Include="ace\src\theme-github.js" />
-    <Content Include="app.css" />
-    <Content Include="index.html" />
+    <Content Include="wwwroot\js\ace\ace.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="wwwroot\js\ace\mode-sicp.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="wwwroot\js\ace\theme-github.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="wwwroot\css\app.css" />
+    <Content Include="wwwroot\index.html" />
     <Content Include="web.config" />
+    <Content Include="wwwroot\lib\requirejs\bin\r.js" />
+    <Content Include="wwwroot\lib\requirejs\require.js" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="app\sicp\evaluator\ApplicationEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\AssignmentEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\IEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\Interpreter.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\BeginEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\CondEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\DefinitionEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\Env.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\BaseEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\IfEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\LambdaEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\QuoteEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\SelfEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\VariableEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\lang\Sv.ts" />
     <TypeScriptCompile Include="Scripts\typings\requirejs\require.d.ts" />
-    <TypeScriptCompile Include="sicpEditor.ts" />
-    <TypeScriptCompile Include="parser.ts" />
-    <TypeScriptCompile Include="app.ts" />
+    <TypeScriptCompile Include="app\editor\sicpEditor.ts" />
+    <TypeScriptCompile Include="app\sicp\lang\Parser.ts" />
     <TypeScriptCompile Include="Scripts\typings\ace\ace.d.ts" />
     <TypeScriptCompile Include="Scripts\typings\jquery\jquery.d.ts" />
   </ItemGroup>
@@ -45,6 +67,8 @@
     <None Include="web.Release.config">
       <DependentUpon>web.config</DependentUpon>
     </None>
+    <Content Include="wwwroot\lib\requirejs\package.json" />
+    <Content Include="wwwroot\lib\requirejs\README.md" />
   </ItemGroup>
   <ItemGroup />
   <PropertyGroup>
@@ -62,7 +86,7 @@
           <UseIIS>True</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>50037</DevelopmentServerPort>
-          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <DevelopmentServerVPath>/wwwroot</DevelopmentServerVPath>
           <IISUrl>http://localhost:50037/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
@@ -81,16 +105,22 @@
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>
     <TypeScriptModuleKind>None</TypeScriptModuleKind>
-    <TypeScriptOutFile>main.js</TypeScriptOutFile>
+    <TypeScriptOutFile>wwwroot/js/app.js</TypeScriptOutFile>
     <TypeScriptOutDir />
     <TypeScriptGeneratesDeclarations>False</TypeScriptGeneratesDeclarations>
     <TypeScriptNoEmitOnError>True</TypeScriptNoEmitOnError>
     <TypeScriptMapRoot />
     <TypeScriptSourceRoot />
+    <FilesToIncludeForPublish>OnlyFilesToRunTheApp</FilesToIncludeForPublish>
+    <ExcludeGeneratedDebugSymbol>false</ExcludeGeneratedDebugSymbol>
+    <OutputPath>wwwroot\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <TypeScriptRemoveComments>true</TypeScriptRemoveComments>
     <TypeScriptSourceMap>false</TypeScriptSourceMap>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>rem xcopy /s /y "$(ProjectDir)node_modules\requirejs" "$(ProjectDir)wwwroot\scripts\requirejs"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
