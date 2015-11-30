@@ -5,7 +5,7 @@ module Sicp.Evaluator {
             return Lang.SvSymbol.matches(node);
         }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.SvCont {
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
             return [env.get(Lang.SvSymbol.val(sv)), cont];
         }
     }

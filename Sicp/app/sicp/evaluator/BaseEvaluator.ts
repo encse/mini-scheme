@@ -12,7 +12,7 @@ module Sicp.Evaluator {
             return true;
         }
 
-        public evaluate(sv: Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Lang.SvCont {
+        public evaluate(sv: Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Lang.Pcont {
 
             for (var i = 0; i < this.evaluators.length;i++) {
                 if (this.evaluators[i].matches(sv))
@@ -21,16 +21,16 @@ module Sicp.Evaluator {
             throw 'cannot evaluate ' + sv.toString();
         }
 
-        public evaluateList(exprs: Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Lang.SvCont {
+        public evaluateList(exprs: Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Lang.Pcont {
 
             var lastSv: Lang.Sv = Lang.SvCons.Nil;
             var loop = (exprs: Lang.Sv) => {
                 if (Lang.SvCons.isNil(exprs))
-                    return <Lang.SvCont>[lastSv, cont];
+                    return <Lang.Pcont>[lastSv, cont];
 
                 return this.evaluate(Sicp.Lang.SvCons.car(exprs), env, (sv: Lang.Sv) => {
                     lastSv = sv;
-                    return <Lang.SvCont>[Lang.SvCons.cdr(exprs), loop];
+                    return <Lang.Pcont>[Lang.SvCons.cdr(exprs), loop];
                 });
             };
 

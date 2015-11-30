@@ -7,13 +7,13 @@ module Sicp.Evaluator {
             return this.evaluator.isTaggedList(node, 'define');
         }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.SvCont {
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
 
             return this.evaluator.evaluate(this.getValue(sv), env, (svValue: Lang.Sv) => {
                 env.define(
                     Lang.SvSymbol.val(this.getVariable(sv)),
                     svValue);
-                return <Lang.SvCont>[svValue, cont];
+                return <Lang.Pcont>[svValue, cont];
             });
         }
 

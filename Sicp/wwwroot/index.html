@@ -28,7 +28,30 @@
         <div id="main">
             <div id="main-content">
                 <h2>Mini scheme</h2>
-                <pre id="editor">(define fact
+                <pre id="editor">(define for-each 
+    (lambda (dg lst)
+        (cond 
+            ((null? lst) 42)
+            (else 
+                (dg (car lst))
+                (for-each dg (cdr lst))
+            )
+        )
+        
+    )
+)
+(for-each (lambda (x) x) '(1 2 3))</pre>
+                <div id="output"></div>
+                <pre></pre>
+                <pre>(define f 
+    (lambda (return)
+        (return 2)
+        3
+    )
+)
+(call-with-current-continuation f)</pre>
+            
+                <pre id="factorial">(define fact
     (lambda(x)
         (cond
             ((= x 1) 1)
@@ -39,7 +62,56 @@
 (fact 5)
 (fact 4)
             </pre>
-                <div id="output"></div>
+                <pre>(define for-each 
+    (lambda (dg lst)
+        (cond 
+            ((null? lst) ())
+            (else 
+                (dg (car lst))
+                (for-each dg (cdr lst))
+            )
+        )
+        
+    )
+)
+(define y 0)
+(for-each (lambda (x) (set! y (+ y x))) '(1 2 3))
+</pre>
+                <pre>
+                    (define for-each 
+    (lambda (dg lst)
+        (cond 
+            ((null? lst) ())
+            (else 
+                (dg (car lst))
+                (for-each dg (cdr lst))
+            )
+        )
+        
+    )
+)
+(define generate-one-element-at-a-time (lambda (lst)
+  (define control-state (lambda (return)
+    (for-each 
+     (lambda (element)
+               (set! return (call-with-current-continuation
+                              (lambda (resume-here)
+                               
+                               (set! control-state resume-here)
+                               (return element)))))
+     lst)
+    (return 'you-fell-off-the-end)))
+  
+  
+  (define generator (lambda()
+    (call-with-current-continuation control-state)))
+ 
+  generator))
+(define generate-digit
+  (generate-one-element-at-a-time '(0 1 2)))
+(set! generate-digit 54)
+(generate-digit)
+</pre>
             </div> <!-- main-content -->
         </div> <!-- main -->
 

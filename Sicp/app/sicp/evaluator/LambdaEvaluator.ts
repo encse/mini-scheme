@@ -7,17 +7,17 @@ module Sicp.Evaluator {
             return this.evaluator.isTaggedList(node, 'lambda');
         }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.SvCont {
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
             return [Lang.SvCons.listFromRvs(
                         new Lang.SvSymbol('procedure'),
-                        this.getLambdaParameters(sv),
-                        this.getLambdaBody(sv),
+                        LambdaEvaluator.getLambdaParameters(sv),
+                        LambdaEvaluator.getLambdaBody(sv),
                         new Lang.SvAny(env))
                     ,cont];
         }
 
-        getLambdaParameters(expr: Lang.Sv) { return Lang.SvCons.cadr(expr); }
-        getLambdaBody(expr: Lang.Sv) { return Lang.SvCons.cddr(expr); }
+        public static getLambdaParameters(expr: Lang.Sv) { return Lang.SvCons.cadr(expr); }
+        public static getLambdaBody(expr: Lang.Sv) { return Lang.SvCons.cddr(expr); }
 
     }
 }

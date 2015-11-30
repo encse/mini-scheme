@@ -9,7 +9,7 @@ module Sicp.Evaluator {
             return this.evaluator.isTaggedList(sv, 'set!');
         }
 
-        public evaluate(sv: Sicp.Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Sicp.Lang.SvCont {
+        public evaluate(sv: Sicp.Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Sicp.Lang.Pcont {
 
             return this.evaluator.evaluate(this.getValue(sv), env, (svValue) => {
                 env.set(
