@@ -9,7 +9,7 @@
             require(['ace/ace'], ace => {
 
                 this.editor = ace.edit("editor");
-                this.editor.setTheme('ace/theme/github');
+                this.editor.setTheme('ace/theme/clouds_midnight');
                 this.editor.getSession().setMode('ace/mode/sicp');
                 this.editor.commands.addCommand({
                     name: 'Evaluate',

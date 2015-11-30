@@ -28,6 +28,7 @@
     <Content Include="wwwroot\js\ace\mode-sicp.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="wwwroot\js\ace\theme-clouds_midnight.js" />
     <Content Include="wwwroot\js\ace\theme-github.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -60,7 +61,9 @@
     <TypeScriptCompile Include="Scripts\typings\jquery\jquery.d.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="packages.config" />
+    <Content Include="packages.config">
+      <SubType>Designer</SubType>
+    </Content>
     <None Include="web.Debug.config">
       <DependentUpon>web.config</DependentUpon>
     </None>
