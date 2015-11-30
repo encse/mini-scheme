@@ -28,7 +28,17 @@ module Sicp.Lang {
                 new Sicp.Evaluator.LambdaEvaluator(evaluator),
                 new Sicp.Evaluator.ApplicationEvaluator(evaluator)
             ]);
-            var res = evaluator.evaluateList(exprs, new Env(env));
+
+            var done = false;
+            var res: Sv;
+            var svcont: SvCont = evaluator.evaluateList(exprs, new Env(env), (sv: Sv) => {
+                res = sv;
+                done = true;
+                return null;
+            });
+            while (!done) 
+                svcont = svcont[1](svcont[0]);
+            
             return res.toString();
         }
 

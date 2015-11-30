@@ -1,25 +1,37 @@
 module Sicp.Evaluator {
-    export class CondEvaluator implements Sicp.Lang.IEvaluator {
-        constructor(private evaluator: Sicp.Evaluator.BaseEvaluator) { }
+  
 
-        public matches(node: Sicp.Lang.Sv): boolean {
+    export class CondEvaluator implements Lang.IEvaluator {
+        constructor(private evaluator: Evaluator.BaseEvaluator) { }
+
+        public matches(node: Lang.Sv): boolean {
             return this.evaluator.isTaggedList(node, 'cond');
         }
 
-        private getCondClauses(cond: Sicp.Lang.Sv) { return Sicp.Lang.SvCons.cdr(cond); }
-        private isCondElseClause(clause: Sicp.Lang.Sv) { return this.evaluator.isTaggedList(clause, "else"); }
-        private getCondPredicate(clause: Sicp.Lang.Sv) { return Sicp.Lang.SvCons.car(clause); }
-        private getCondActions(clause: Sicp.Lang.Sv) { return Sicp.Lang.SvCons.cdr(clause); }
+        private getCondClauses(cond: Lang.Sv) { return Lang.SvCons.cdr(cond); }
+        private isCondElseClause(clause: Lang.Sv) { return this.evaluator.isTaggedList(clause, "else"); }
+        private getCondPredicate(clause: Lang.Sv) { return Lang.SvCons.car(clause); }
+        private getCondActions(clause: Lang.Sv) { return Lang.SvCons.cdr(clause); }
 
-        public evaluate(node: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
-            let clauses = this.getCondClauses(node);
-            while (!Sicp.Lang.SvCons.isNil(clauses)) {
-                let clause = Sicp.Lang.SvCons.car(clauses);
-                if (this.isCondElseClause(clause) || Sicp.Lang.SvBool.isTrue(this.evaluator.evaluate(Sicp.Lang.SvCons.car(clause), env)))
-                    return this.evaluator.evaluateList(this.getCondActions(clause), env);
-                clauses = Sicp.Lang.SvCons.cdr(clauses);
-            }
-            return Sicp.Lang.SvCons.Nil;
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.SvCont {
+
+            var loop = (clauses: Lang.Sv) => {
+                if (Lang.SvCons.isNil(clauses))
+                    return <Lang.SvCont>[clauses, cont];
+
+                const clause = Lang.SvCons.car(clauses);
+                if (this.isCondElseClause(clause))
+                    return this.evaluator.evaluateList(this.getCondActions(clause), env, cont);
+
+                return this.evaluator.evaluate(Lang.SvCons.car(clause), env, (svCond: Lang.Sv) => {
+                    if (Lang.SvBool.isTrue(svCond))
+                        return this.evaluator.evaluateList(this.getCondActions(clause), env, cont);
+                    else
+                        return <Lang.SvCont>[Lang.SvCons.cdr(clauses), loop];
+                });
+            };
+
+            return [this.getCondClauses(sv), loop];
         }
     }
 }

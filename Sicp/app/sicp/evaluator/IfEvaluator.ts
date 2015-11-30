@@ -1,15 +1,18 @@
 module Sicp.Evaluator {
+    
     export class IfEvaluator implements Lang.IEvaluator {
-        constructor(private evaluator: Sicp.Evaluator.BaseEvaluator) {  }
+        constructor(private evaluator: Evaluator.BaseEvaluator) {  }
 
-        public matches(node: Sicp.Lang.Sv): boolean {
+        public matches(node: Lang.Sv): boolean {
             return this.evaluator.isTaggedList(node, 'if');
         }
 
-        public evaluate(node: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
-            return Sicp.Lang.SvBool.isTrue(this.evaluator.evaluate(this.getIfPredicate(node), env)) ?
-                this.evaluator.evaluate(this.getIfConsequent(node), env) :
-                this.evaluator.evaluate(this.getIfAlternative(node), env);
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.SvCont {
+            return this.evaluator.evaluate(this.getIfPredicate(sv), env, (svCond: Lang.Sv) => {
+                return Lang.SvBool.isTrue(svCond) ?
+                    this.evaluator.evaluate(this.getIfConsequent(sv), env, cont):
+                    this.evaluator.evaluate(this.getIfAlternative(sv), env, cont);
+            });
         }
 
         getIfPredicate(expr: any) { return Sicp.Lang.SvCons.cadr(expr); }

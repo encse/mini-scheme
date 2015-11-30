@@ -1,5 +1,6 @@
 
 module Sicp.Evaluator {
+    
 
     export class AssignmentEvaluator implements Sicp.Lang.IEvaluator {
         constructor(private evaluator: Sicp.Evaluator.BaseEvaluator) {  }
@@ -8,11 +9,14 @@ module Sicp.Evaluator {
             return this.evaluator.isTaggedList(sv, 'set!');
         }
 
-        public evaluate(sv: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
-            env.set(
-                Sicp.Lang.SvSymbol.val(this.getVariable(sv)),
-                this.evaluator.evaluate(this.getValue(sv), env));
-            return Sicp.Lang.SvCons.Nil;
+        public evaluate(sv: Sicp.Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Sicp.Lang.SvCont {
+
+            return this.evaluator.evaluate(this.getValue(sv), env, (svValue) => {
+                env.set(
+                    Sicp.Lang.SvSymbol.val(this.getVariable(sv)),
+                    svValue);
+                return [svValue, cont];
+            });
         }
 
         getVariable(node: Sicp.Lang.Sv): Sicp.Lang.Sv { return Sicp.Lang.SvCons.cadr(node); }

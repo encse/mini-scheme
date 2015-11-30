@@ -1,61 +1,76 @@
-
 module Sicp.Evaluator {
-   
+    
      export class ApplicationEvaluator implements Sicp.Lang.IEvaluator {
-        constructor(private evaluator: Sicp.Evaluator.BaseEvaluator) {}
+      
+
+        constructor(private evaluator: Sicp.Evaluator.BaseEvaluator) { }
         
-        public matches(sv: Sicp.Lang.Sv): boolean {
-            return Sicp.Lang.SvCons.matches(sv);
+        public matches(sv: Lang.Sv): boolean {
+            return Lang.SvCons.matches(sv);
         }
 
-        public evaluate(rv: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
-            let operator = this.evaluator.evaluate(this.getOperator(rv), env);
-            if (!this.isPrimitiveProcedure(operator) && !this.isCompoundProcedure(operator))
-                throw 'undefined procedure' + operator.toString();
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.SvCont {
+            return this.evaluator.evaluate(this.getOperator(sv), env, (operator: Lang.Sv) => {
+                
+                if (!this.isPrimitiveProcedure(operator) && !this.isCompoundProcedure(operator))
+                    throw 'undefined procedure' + operator.toString();
 
-            var args = this.evaluateArgs(this.getArguments(rv), env);
-            if (this.isPrimitiveProcedure(operator)) {
-                return this.getPrimitiveProcedureDelegate(operator)(args);
-            } else {
-                let newEnv = new Sicp.Lang.Env(this.getProcedureEnv(operator));
-                let params = this.getProcedureParameters(operator);
+                return this.evaluateArgs(this.getArguments(sv), env, (args: Lang.Sv) => {
+                    if (this.isPrimitiveProcedure(operator))
+                    {
+                        return <Lang.SvCont>[this.getPrimitiveProcedureDelegate(operator)(args), cont];
+                    }
+                    else
+                    {
+                        let newEnv = new Lang.Env(this.getProcedureEnv(operator));
+                        let params = this.getProcedureParameters(operator);
 
-                while (!Sicp.Lang.SvCons.isNil(args) || !Sicp.Lang.SvCons.isNil(params)) {
-                    if (Sicp.Lang.SvCons.isNil(args))
-                        throw 'not enough argument';
-                    if (Sicp.Lang.SvCons.isNil(params))
-                        throw 'too many argument';
+                        while (!Lang.SvCons.isNil(args) || !Lang.SvCons.isNil(params)) {
+                            if (Lang.SvCons.isNil(args))
+                                throw 'not enough argument';
+                            if (Lang.SvCons.isNil(params))
+                                throw 'too many argument';
 
-                    const parameter = Sicp.Lang.SvSymbol.val(Sicp.Lang.SvCons.car(params));
-                    const arg = Sicp.Lang.SvCons.car(args);
-                    newEnv.define(parameter, arg);
+                            const parameter = Sicp.Lang.SvSymbol.val(Lang.SvCons.car(params));
+                            const arg = Lang.SvCons.car(args);
+                            newEnv.define(parameter, arg);
 
-                    params = Sicp.Lang.SvCons.cdr(params);
-                    args = Sicp.Lang.SvCons.cdr(args);
-                }
+                            params = Lang.SvCons.cdr(params);
+                            args = Lang.SvCons.cdr(args);
+                        }
 
-                return this.evaluator.evaluateList(this.getProcedureBody(operator), newEnv);
-            }
+                        return this.evaluator.evaluateList(this.getProcedureBody(operator), newEnv, cont);
+                    }
+
+                });
+                
+            });
+            
         }
 
-        isCompoundProcedure(expr: Sicp.Lang.Sv) { return this.evaluator.isTaggedList(expr, 'procedure'); }
-        isPrimitiveProcedure(expr: Sicp.Lang.Sv) { return this.evaluator.isTaggedList(expr, 'primitive'); }
+        isCompoundProcedure(expr: Lang.Sv) { return this.evaluator.isTaggedList(expr, 'procedure'); }
+        isPrimitiveProcedure(expr: Lang.Sv) { return this.evaluator.isTaggedList(expr, 'primitive'); }
 
-        getProcedureParameters(expr: Sicp.Lang.Sv) { return Sicp.Lang.SvCons.cadr(expr); }
-        getProcedureBody(expr: Sicp.Lang.Sv) { return Sicp.Lang.SvCons.caddr(expr); }
-        getProcedureEnv(expr: Sicp.Lang.Sv): Sicp.Lang.Env { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cadddr(expr)); }
-        getPrimitiveProcedureDelegate(expr: Sicp.Lang.Sv) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cdr(expr)); }
-        getOperator(expr: Sicp.Lang.Sv) { return Sicp.Lang.SvCons.car(expr); }
-        getArguments(expr: Sicp.Lang.Sv) { return Sicp.Lang.SvCons.cdr(expr); }
+        getProcedureParameters(expr: Lang.Sv) { return Lang.SvCons.cadr(expr); }
+        getProcedureBody(expr: Lang.Sv) { return Lang.SvCons.caddr(expr); }
+        getProcedureEnv(expr: Lang.Sv): Lang.Env { return Lang.SvAny.val(Lang.SvCons.cadddr(expr)); }
+        getPrimitiveProcedureDelegate(expr: Lang.Sv) { return Lang.SvAny.val(Lang.SvCons.cdr(expr)); }
+        getOperator(expr: Lang.Sv) { return Lang.SvCons.car(expr); }
+        getArguments(expr: Lang.Sv) { return Lang.SvCons.cdr(expr); }
 
-        evaluateArgs(args: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
-            let evaluatedArgs: Sicp.Lang.Sv[] = [];
+        evaluateArgs(args: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.SvCont {
+            let evaluatedArgs: Lang.Sv[] = [];
 
-            while (!Sicp.Lang.SvCons.isNil(args)) {
-                evaluatedArgs.push(this.evaluator.evaluate(Sicp.Lang.SvCons.car(args), env));
-                args = Sicp.Lang.SvCons.cdr(args);
-            }
-            return Sicp.Lang.SvCons.listFromRvArray(evaluatedArgs);
+            var loop = (args: Lang.Sv) => {
+                if (Lang.SvCons.isNil(args))
+                    return <Lang.SvCont>[Lang.SvCons.listFromRvArray(evaluatedArgs), cont];
+
+                return this.evaluator.evaluate(Lang.SvCons.car(args), env, (evaluatedArg: Lang.Sv) => {
+                    evaluatedArgs.push(evaluatedArg);
+                    return <Lang.SvCont>[Lang.SvCons.cdr(args), loop];
+                });
+            };
+            return [args, loop];
         }
     }
 }

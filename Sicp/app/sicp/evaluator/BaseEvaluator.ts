@@ -1,4 +1,5 @@
 module Sicp.Evaluator {
+   
     export class BaseEvaluator implements Sicp.Lang.IEvaluator {
 
         private evaluators: Sicp.Lang.IEvaluator[];
@@ -7,33 +8,39 @@ module Sicp.Evaluator {
             this.evaluators = evaluators;
         }
 
-        public matches(node: Sicp.Lang.Sv): boolean {
+        public matches(node: Lang.Sv): boolean {
             return true;
         }
 
-        public evaluate(sv: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
+        public evaluate(sv: Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Lang.SvCont {
 
-            for (let i = 0; i < this.evaluators.length; i++) {
+            for (var i = 0; i < this.evaluators.length;i++) {
                 if (this.evaluators[i].matches(sv))
-                    return this.evaluators[i].evaluate(sv, env);
+                    return this.evaluators[i].evaluate(sv, env, cont);
             }
             throw 'cannot evaluate ' + sv.toString();
         }
 
-        public evaluateList(exprs: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
-            let res: Sicp.Lang.Sv = Sicp.Lang.SvCons.Nil;
+        public evaluateList(exprs: Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Lang.SvCont {
 
-            while (!Sicp.Lang.SvCons.isNil(exprs)) {
-                res = this.evaluate(Sicp.Lang.SvCons.car(exprs), env);
-                exprs = Sicp.Lang.SvCons.cdr(exprs);
-            }
-            return res;
+            var lastSv: Lang.Sv = Lang.SvCons.Nil;
+            var loop = (exprs: Lang.Sv) => {
+                if (Lang.SvCons.isNil(exprs))
+                    return <Lang.SvCont>[lastSv, cont];
+
+                return this.evaluate(Sicp.Lang.SvCons.car(exprs), env, (sv: Lang.Sv) => {
+                    lastSv = sv;
+                    return <Lang.SvCont>[Lang.SvCons.cdr(exprs), loop];
+                });
+            };
+
+            return [exprs, loop];
         }
 
-        public isTaggedList(node: Sicp.Lang.Sv, tag: string) {
-            if (!Sicp.Lang.SvCons.matches(node)) return false;
-            const car = Sicp.Lang.SvCons.car(node);
-            return Sicp.Lang.SvSymbol.matches(car) && Sicp.Lang.SvSymbol.val(car) === tag;
+        public isTaggedList(node: Lang.Sv, tag: string) {
+            if (!Lang.SvCons.matches(node)) return false;
+            const car = Lang.SvCons.car(node);
+            return Lang.SvSymbol.matches(car) && Lang.SvSymbol.val(car) === tag;
         }
     }
 }

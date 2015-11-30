@@ -1,19 +1,23 @@
 module Sicp.Evaluator {
+  
     export class DefinitionEvaluator implements Lang.IEvaluator {
         constructor(private evaluator: Sicp.Evaluator.BaseEvaluator) {  }
 
-        public matches(node: Sicp.Lang.Sv): boolean {
+        public matches(node: Lang.Sv): boolean {
             return this.evaluator.isTaggedList(node, 'define');
         }
 
-        public evaluate(node: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
-            env.define(
-                Sicp.Lang.SvSymbol.val(this.getVariable(node)),
-                this.evaluator.evaluate(this.getValue(node), env));
-            return Sicp.Lang.SvCons.Nil;
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.SvCont {
+
+            return this.evaluator.evaluate(this.getValue(sv), env, (svValue: Lang.Sv) => {
+                env.define(
+                    Lang.SvSymbol.val(this.getVariable(sv)),
+                    svValue);
+                return <Lang.SvCont>[svValue, cont];
+            });
         }
 
-        getVariable(node: Sicp.Lang.Sv): Sicp.Lang.Sv { return Sicp.Lang.SvCons.cadr(node); }
-        getValue(node: Sicp.Lang.Sv): Sicp.Lang.Sv { return Sicp.Lang.SvCons.caddr(node); }
+        getVariable(sv: Lang.Sv): Lang.Sv { return Lang.SvCons.cadr(sv); }
+        getValue(sv: Lang.Sv): Lang.Sv { return Lang.SvCons.caddr(sv); }
     }
 }

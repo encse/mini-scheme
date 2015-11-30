@@ -1,12 +1,13 @@
 module Sicp.Evaluator {
-
+  
     export class SelfEvaluator implements Lang.IEvaluator {
-        public matches(node: Sicp.Lang.Sv): boolean {
-            return Sicp.Lang.SvString.matches(node) || Sicp.Lang.SvBool.matches(node) || Sicp.Lang.SvNumber.matches(node) || Sicp.Lang.SvCons.isNil(node);
+        public matches(node: Lang.Sv): boolean {
+            return Lang.SvString.matches(node) || Lang.SvBool.matches(node) ||
+                Lang.SvNumber.matches(node) || Lang.SvCons.isNil(node);
         }
 
-        public evaluate(node: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
-            return node;
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.SvCont {
+            return [sv, cont];
         }
     }
 }

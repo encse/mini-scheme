@@ -6,8 +6,8 @@ module Sicp.Evaluator {
             return this.evaluator.isTaggedList(node, 'begin');
         }
 
-        public evaluate(sv: Sicp.Lang.Sv, env: Sicp.Lang.Env): Sicp.Lang.Sv {
-            return this.evaluator.evaluateList(this.getBeginActions(sv), env);
+        public evaluate(sv: Sicp.Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Sicp.Lang.SvCont {
+            return this.evaluator.evaluateList(this.getBeginActions(sv), env, cont);
         }
 
         getBeginActions(expr: Sicp.Lang.Sv) { return Sicp.Lang.SvCons.cdr(expr); }
