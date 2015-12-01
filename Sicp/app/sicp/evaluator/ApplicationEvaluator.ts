@@ -9,10 +9,11 @@ module Sicp.Evaluator {
             return Lang.SvCons.matches(sv);
         }
 
-        public static evalCall(operator:Lang.Sv, args: Lang.Sv, cont:Lang.Cont, evaluator:Evaluator.BaseEvaluator):Lang.Pcont {
+        public static evalCall(operator:Lang.Sv, args: Lang.Sv, cont:Lang.Cont, evaluator:Evaluator.BaseEvaluator):Lang.Sv {
              
             if (this.isPrimitiveProcedure(operator)) {
-                return <Lang.Pcont>[this.getPrimitiveProcedureDelegate(operator)(args), cont];
+                var res = this.getPrimitiveProcedureDelegate(operator)(args);
+                return new Lang.SvThunk(() => cont(res));
             }
             else if (this.isContinuation(operator)) {
                 var arg: Lang.Sv = Lang.SvCons.Nil;
@@ -21,7 +22,8 @@ module Sicp.Evaluator {
                         throw 'too many argument';
                     arg = Lang.SvCons.car(args);
                 }
-                return <Lang.Pcont>[arg, this.getContinuationFromCapturedContinuation(operator)];
+                var newCond = this.getContinuationFromCapturedContinuation(operator);
+                return new Lang.SvThunk(() => newCond(arg));
             }
             else if(this.isCompoundProcedure(operator)) {
                 var newEnv = new Lang.Env(this.getProcedureEnv(operator));
@@ -47,7 +49,7 @@ module Sicp.Evaluator {
         }
          
 
-         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
+         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
              return this.evaluator.evaluate(ApplicationEvaluator.getOperator(sv), env, (operator: Lang.Sv) => {
                 
                 if (!ApplicationEvaluator.isPrimitiveProcedure(operator) &&
@@ -84,19 +86,21 @@ module Sicp.Evaluator {
         private static getOperator(expr: Lang.Sv) { return Lang.SvCons.car(expr); }
         private static getArguments(expr: Lang.Sv) { return Lang.SvCons.cdr(expr); }
 
-        evaluateArgs(args: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
-            let evaluatedArgs: Lang.Sv[] = [];
+        evaluateArgs(args: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
+            var evaluatedArgs: Lang.Sv[] = [];
 
-            var loop = (args: Lang.Sv) => {
-                if (Lang.SvCons.isNil(args))
-                    return <Lang.Pcont>[Lang.SvCons.listFromRvArray(evaluatedArgs), cont];
-
+            var loop = (args: Lang.Sv) :Lang.Sv => {
+                if (Lang.SvCons.isNil(args)) {
+                    var res = Lang.SvCons.listFromRvArray(evaluatedArgs);
+                    return new Lang.SvThunk(() => cont(res));
+                }
                 return this.evaluator.evaluate(Lang.SvCons.car(args), env, (evaluatedArg: Lang.Sv) => {
                     evaluatedArgs.push(evaluatedArg);
-                    return <Lang.Pcont>[Lang.SvCons.cdr(args), loop];
+                    var nextArgs = Lang.SvCons.cdr(args);
+                    return new Lang.SvThunk(() => loop(nextArgs));
                 });
             };
-            return [args, loop];
+            return new Lang.SvThunk(() => loop(args));
         }
     }
 }

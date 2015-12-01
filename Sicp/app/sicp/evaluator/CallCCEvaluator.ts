@@ -9,7 +9,7 @@ module Sicp.Evaluator {
             return Evaluator.BaseEvaluator.isTaggedList(sv, 'call-with-current-continuation');
         }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
             /* (call-with-current-continuation (lambda (hop) ...)) */
             return this.evaluator.evaluate(this.getLambda(sv), env, lambda => {
                 var args = Lang.SvCons.listFromRvs(new Lang.SvCons(new Lang.SvSymbol('captured-continuation'), new Lang.SvAny(cont)));

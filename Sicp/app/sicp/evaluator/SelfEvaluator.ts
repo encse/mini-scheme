@@ -6,8 +6,8 @@ module Sicp.Evaluator {
                 Lang.SvNumber.matches(node) || Lang.SvCons.isNil(node);
         }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
-            return [sv, cont];
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
+            return new Lang.SvThunk(() => cont(sv));
         }
     }
 }

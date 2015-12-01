@@ -7,7 +7,7 @@ module Sicp.Evaluator {
             return Evaluator.BaseEvaluator.isTaggedList(node, 'if');
         }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
             return this.evaluator.evaluate(this.getIfPredicate(sv), env, (svCond: Lang.Sv) => {
                 return Lang.SvBool.isTrue(svCond) ?
                     this.evaluator.evaluate(this.getIfConsequent(sv), env, cont):

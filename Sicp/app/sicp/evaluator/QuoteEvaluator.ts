@@ -6,8 +6,9 @@ module Sicp.Evaluator {
             return Evaluator.BaseEvaluator.isTaggedList(node, 'quote');
         }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
-            return [Lang.SvCons.cdr(sv), cont];
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
+            var res = Lang.SvCons.cdr(sv);
+            return new Lang.SvThunk(() => cont(res));
         }
     }
 }

@@ -13,25 +13,28 @@ module Sicp.Evaluator {
         private getCondPredicate(clause: Lang.Sv) { return Lang.SvCons.car(clause); }
         private getCondActions(clause: Lang.Sv) { return Lang.SvCons.cdr(clause); }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
 
             var loop = (clauses: Lang.Sv) => {
                 if (Lang.SvCons.isNil(clauses))
-                    return <Lang.Pcont>[clauses, cont];
+                    return new Lang.SvThunk( () => cont(clauses));
 
-                const clause = Lang.SvCons.car(clauses);
+                var clause = Lang.SvCons.car(clauses);
                 if (this.isCondElseClause(clause))
                     return this.evaluator.evaluateList(this.getCondActions(clause), env, cont);
 
                 return this.evaluator.evaluate(Lang.SvCons.car(clause), env, (svCond: Lang.Sv) => {
                     if (Lang.SvBool.isTrue(svCond))
                         return this.evaluator.evaluateList(this.getCondActions(clause), env, cont);
-                    else
-                        return <Lang.Pcont>[Lang.SvCons.cdr(clauses), loop];
+                    else {
+                        var nextClauses = Lang.SvCons.cdr(clauses);
+                        return new Lang.SvThunk(() => loop(nextClauses));
+                    }
                 });
             };
 
-            return [this.getCondClauses(sv), loop];
+            var clauses = this.getCondClauses(sv);
+            return new Lang.SvThunk(() => loop(clauses));
         }
     }
 }

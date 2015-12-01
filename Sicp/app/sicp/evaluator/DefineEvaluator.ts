@@ -7,7 +7,7 @@ module Sicp.Evaluator {
             return Evaluator.BaseEvaluator.isTaggedList(node, 'define');
         }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
 
             if (Lang.SvCons.matches(this.getHead(sv))) {
                 //implicit lambda definition
@@ -15,14 +15,14 @@ module Sicp.Evaluator {
                 env.define(
                     Lang.SvSymbol.val(this.getFunctionName(sv)),
                     lambda);
-                return [lambda, cont];
+                return new Lang.SvThunk(()=> cont(lambda));
             }
             else {
-                return this.evaluator.evaluate(this.getValue(sv), env, (svValue: Lang.Sv):Lang.Pcont => {
+                return this.evaluator.evaluate(this.getValue(sv), env, (svValue: Lang.Sv):Lang.Sv => {
                     env.define(
                         Lang.SvSymbol.val(this.getVariable(sv)),
                         svValue);
-                    return [svValue, cont];
+                    return new Lang.SvThunk(()=> cont(svValue));
                 });
             }
         }

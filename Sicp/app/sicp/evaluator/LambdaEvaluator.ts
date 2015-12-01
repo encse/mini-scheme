@@ -7,12 +7,12 @@ module Sicp.Evaluator {
             return Evaluator.BaseEvaluator.isTaggedList(node, 'lambda');
         }
 
-        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
-            return [LambdaEvaluator.createCompoundProcedure(
-                        LambdaEvaluator.getLambdaParameters(sv),
-                        LambdaEvaluator.getLambdaBody(sv),
-                        env)
-                    ,cont];
+        public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
+            var proc = LambdaEvaluator.createCompoundProcedure(
+                LambdaEvaluator.getLambdaParameters(sv),
+                LambdaEvaluator.getLambdaBody(sv),
+                env);
+            return new Lang.SvThunk( () => cont(proc));
         }
 
         public static createCompoundProcedure(params: Lang.Sv, body: Lang.Sv, env: Lang.Env):Lang.Sv {

@@ -39,6 +39,7 @@
     <Content Include="wwwroot\lib\requirejs\require.js" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="app\sicp\evaluator\ThunkEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\CallCCEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\ApplicationEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\AssignmentEvaluator.ts" />

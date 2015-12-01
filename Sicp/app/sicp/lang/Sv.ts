@@ -1,10 +1,25 @@
 ﻿namespace Sicp.Lang {
     export class Sv {
-
+        marker() {};
     }
     
     export class SvAtom extends Sv {
         public static matches(node: Sv) { return !SvCons.matches(node); }
+    }
+
+    export class SvThunk extends Sv {
+        public constructor(public _val: () => Sv) { super(); }
+
+        public static matches(node: Sv) { return node instanceof SvThunk; }
+
+        public static val(node: Sv): () => Sv {
+            if (!SvThunk.matches(node)) throw "Thunk expected";
+            return (<SvThunk>node)._val;
+        }
+
+        public toString(): string {
+            return "T(" + this._val.toString()+")";
+        }
     }
 
     export class SvCons extends Sv {
