@@ -1,7 +1,7 @@
 module Sicp.Lang {
     export class Interpreter {
         
-        public evaluateString(st: string) {
+        public evaluateString(st: string, log:(st:string)=>void) {
             let parser = new Lang.Parser();
             let exprs = parser.parse(st);
             let env = new Env(null);
@@ -14,6 +14,7 @@ module Sicp.Lang {
             env.define('-', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) - SvNumber.val(SvCons.cadr(args))))));
             env.define('+', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) + SvNumber.val(SvCons.cadr(args))))));
             env.define('/', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) / SvNumber.val(SvCons.cadr(args))))));
+            env.define('trace', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => { log(args.toString()); return SvCons.Nil; } )));
 
             var evaluator = new Sicp.Evaluator.BaseEvaluator();
             evaluator.setEvaluators([

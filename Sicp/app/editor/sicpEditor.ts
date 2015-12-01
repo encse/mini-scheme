@@ -15,10 +15,15 @@
                     name: 'Evaluate',
                     bindKey: { win: 'Ctrl-E', mac: 'Command-E' },
                     exec: editor => {
+                        var st = "";
+                        var log = (stT) => {
+                            st += stT + "\n";
+                            this.setOutput(st);
+                        }
                         try {
-                            this.setOutput(new Sicp.Lang.Interpreter().evaluateString(editor.getValue()));
+                            log(new Sicp.Lang.Interpreter().evaluateString(editor.getValue(), log));
                         } catch (ex) {
-                            this.setOutput(ex);
+                            log(ex);
                         }
                     }
                 });

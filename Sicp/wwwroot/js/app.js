@@ -13,11 +13,16 @@ var Editor;
                     name: 'Evaluate',
                     bindKey: { win: 'Ctrl-E', mac: 'Command-E' },
                     exec: function (editor) {
+                        var st = "";
+                        var log = function (stT) {
+                            st += stT + "\n";
+                            _this.setOutput(st);
+                        };
                         try {
-                            _this.setOutput(new Sicp.Lang.Interpreter().evaluateString(editor.getValue()));
+                            log(new Sicp.Lang.Interpreter().evaluateString(editor.getValue(), log));
                         }
                         catch (ex) {
-                            _this.setOutput(ex);
+                            log(ex);
                         }
                     }
                 });
@@ -75,53 +80,66 @@ var Sicp;
             ApplicationEvaluator.prototype.matches = function (sv) {
                 return Sicp.Lang.SvCons.matches(sv);
             };
+            ApplicationEvaluator.evalCall = function (operator, args, cont, evaluator) {
+                if (this.isPrimitiveProcedure(operator)) {
+                    return [this.getPrimitiveProcedureDelegate(operator)(args), cont];
+                }
+                else if (this.isContinuation(operator)) {
+                    var arg = Sicp.Lang.SvCons.Nil;
+                    if (!Sicp.Lang.SvCons.isNil(args)) {
+                        if (!Sicp.Lang.SvCons.isNil(Sicp.Lang.SvCons.cdr(args)))
+                            throw 'too many argument';
+                        arg = Sicp.Lang.SvCons.car(args);
+                    }
+                    return [arg, this.getContinuationFromCapturedContinuation(operator)];
+                }
+                else if (this.isCompoundProcedure(operator)) {
+                    var newEnv = new Sicp.Lang.Env(this.getProcedureEnv(operator));
+                    var params = this.getProcedureParameters(operator);
+                    while (!Sicp.Lang.SvCons.isNil(args) || !Sicp.Lang.SvCons.isNil(params)) {
+                        if (Sicp.Lang.SvCons.isNil(args))
+                            throw 'not enough argument';
+                        if (Sicp.Lang.SvCons.isNil(params))
+                            throw 'too many argument';
+                        var parameter = Sicp.Lang.SvSymbol.val(Sicp.Lang.SvCons.car(params));
+                        var arg = Sicp.Lang.SvCons.car(args);
+                        newEnv.define(parameter, arg);
+                        params = Sicp.Lang.SvCons.cdr(params);
+                        args = Sicp.Lang.SvCons.cdr(args);
+                    }
+                    return evaluator.evaluateList(this.getProcedureBody(operator), newEnv, cont);
+                }
+                else
+                    throw 'undefined procedure' + operator.toString();
+            };
             ApplicationEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var _this = this;
-                return this.evaluator.evaluate(this.getOperator(sv), env, function (operator) {
-                    if (!_this.isPrimitiveProcedure(operator) && !_this.isCompoundProcedure(operator) && !_this.isContinuation(operator))
+                return this.evaluator.evaluate(ApplicationEvaluator.getOperator(sv), env, function (operator) {
+                    if (!ApplicationEvaluator.isPrimitiveProcedure(operator) &&
+                        !ApplicationEvaluator.isCompoundProcedure(operator) &&
+                        !ApplicationEvaluator.isContinuation(operator))
                         throw 'undefined procedure' + operator.toString();
-                    return _this.evaluateArgs(_this.getArguments(sv), env, function (args) {
-                        if (_this.isPrimitiveProcedure(operator)) {
-                            return [_this.getPrimitiveProcedureDelegate(operator)(args), cont];
-                        }
-                        else if (_this.isContinuation(operator)) {
-                            var arg = Sicp.Lang.SvCons.Nil;
-                            if (!Sicp.Lang.SvCons.isNil(args)) {
-                                if (!Sicp.Lang.SvCons.isNil(Sicp.Lang.SvCons.cdr(args)))
-                                    throw 'too many argument';
-                                arg = Sicp.Lang.SvCons.car(args);
-                            }
-                            return [arg, _this.getContinuationFromCapturedContinuation(operator)];
-                        }
-                        else {
-                            var newEnv = new Sicp.Lang.Env(_this.getProcedureEnv(operator));
-                            var params = _this.getProcedureParameters(operator);
-                            while (!Sicp.Lang.SvCons.isNil(args) || !Sicp.Lang.SvCons.isNil(params)) {
-                                if (Sicp.Lang.SvCons.isNil(args))
-                                    throw 'not enough argument';
-                                if (Sicp.Lang.SvCons.isNil(params))
-                                    throw 'too many argument';
-                                var parameter = Sicp.Lang.SvSymbol.val(Sicp.Lang.SvCons.car(params));
-                                var arg_1 = Sicp.Lang.SvCons.car(args);
-                                newEnv.define(parameter, arg_1);
-                                params = Sicp.Lang.SvCons.cdr(params);
-                                args = Sicp.Lang.SvCons.cdr(args);
-                            }
-                            return _this.evaluator.evaluateList(_this.getProcedureBody(operator), newEnv, cont);
-                        }
-                    });
+                    return _this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env, function (args) { return ApplicationEvaluator.evalCall(operator, args, cont, _this.evaluator); });
                 });
             };
-            ApplicationEvaluator.prototype.isCompoundProcedure = function (expr) { return this.evaluator.isTaggedList(expr, 'procedure'); };
-            ApplicationEvaluator.prototype.isPrimitiveProcedure = function (expr) { return this.evaluator.isTaggedList(expr, 'primitive'); };
-            ApplicationEvaluator.prototype.isContinuation = function (expr) { return this.evaluator.isTaggedList(expr, 'captured-continuation'); };
-            ApplicationEvaluator.prototype.getContinuationFromCapturedContinuation = function (expr) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cadr(expr)); };
-            ApplicationEvaluator.prototype.getProcedureParameters = function (expr) { return Sicp.Lang.SvCons.cadr(expr); };
-            ApplicationEvaluator.prototype.getProcedureBody = function (expr) { return Sicp.Lang.SvCons.caddr(expr); };
-            ApplicationEvaluator.prototype.getProcedureEnv = function (expr) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cadddr(expr)); };
-            ApplicationEvaluator.prototype.getPrimitiveProcedureDelegate = function (expr) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cdr(expr)); };
-            ApplicationEvaluator.prototype.getOperator = function (expr) { return Sicp.Lang.SvCons.car(expr); };
-            ApplicationEvaluator.prototype.getArguments = function (expr) { return Sicp.Lang.SvCons.cdr(expr); };
+            ApplicationEvaluator.isCompoundProcedure = function (expr) {
+                return Evaluator.BaseEvaluator.isTaggedList(expr, 'procedure');
+            };
+            ApplicationEvaluator.isPrimitiveProcedure = function (expr) {
+                return Evaluator.BaseEvaluator.isTaggedList(expr, 'primitive');
+            };
+            ApplicationEvaluator.isContinuation = function (expr) {
+                return Evaluator.BaseEvaluator.isTaggedList(expr, 'captured-continuation');
+            };
+            ApplicationEvaluator.getContinuationFromCapturedContinuation = function (expr) {
+                return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cdr(expr));
+            };
+            ApplicationEvaluator.getProcedureParameters = function (expr) { return Sicp.Lang.SvCons.cadr(expr); };
+            ApplicationEvaluator.getProcedureBody = function (expr) { return Sicp.Lang.SvCons.caddr(expr); };
+            ApplicationEvaluator.getProcedureEnv = function (expr) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cadddr(expr)); };
+            ApplicationEvaluator.getPrimitiveProcedureDelegate = function (expr) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cdr(expr)); };
+            ApplicationEvaluator.getOperator = function (expr) { return Sicp.Lang.SvCons.car(expr); };
+            ApplicationEvaluator.getArguments = function (expr) { return Sicp.Lang.SvCons.cdr(expr); };
             ApplicationEvaluator.prototype.evaluateArgs = function (args, env, cont) {
                 var _this = this;
                 var evaluatedArgs = [];
@@ -149,7 +167,7 @@ var Sicp;
                 this.evaluator = evaluator;
             }
             AssignmentEvaluator.prototype.matches = function (sv) {
-                return this.evaluator.isTaggedList(sv, 'set!');
+                return Evaluator.BaseEvaluator.isTaggedList(sv, 'set!');
             };
             AssignmentEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var _this = this;
@@ -198,7 +216,7 @@ var Sicp;
                 };
                 return [exprs, loop];
             };
-            BaseEvaluator.prototype.isTaggedList = function (node, tag) {
+            BaseEvaluator.isTaggedList = function (node, tag) {
                 if (!Sicp.Lang.SvCons.matches(node))
                     return false;
                 var car = Sicp.Lang.SvCons.car(node);
@@ -218,7 +236,7 @@ var Sicp;
                 this.evaluator = evaluator;
             }
             BeginEvaluator.prototype.matches = function (node) {
-                return this.evaluator.isTaggedList(node, 'begin');
+                return Evaluator.BaseEvaluator.isTaggedList(node, 'begin');
             };
             BeginEvaluator.prototype.evaluate = function (sv, env, cont) {
                 return this.evaluator.evaluateList(this.getBeginActions(sv), env, cont);
@@ -238,19 +256,14 @@ var Sicp;
                 this.evaluator = evaluator;
             }
             CallCCEvaluator.prototype.matches = function (sv) {
-                return this.evaluator.isTaggedList(sv, 'call-with-current-continuation');
+                return Evaluator.BaseEvaluator.isTaggedList(sv, 'call-with-current-continuation');
             };
             CallCCEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var _this = this;
                 /* (call-with-current-continuation (lambda (hop) ...)) */
                 return this.evaluator.evaluate(this.getLambda(sv), env, function (lambda) {
-                    var newEnv = new Sicp.Lang.Env(env);
-                    var params = Evaluator.LambdaEvaluator.getLambdaParameters(lambda);
-                    if (!Sicp.Lang.SvCons.isNil(Sicp.Lang.SvCons.cdr(params)))
-                        throw 'not enough argument';
-                    newEnv.define(Sicp.Lang.SvSymbol.val(Sicp.Lang.SvCons.car(params)), Sicp.Lang.SvCons.listFromRvs(new Sicp.Lang.SvSymbol('captured-continuation'), new Sicp.Lang.SvAny(cont)));
-                    //TODO: itt ne kelljen mar car
-                    return _this.evaluator.evaluateList(Sicp.Lang.SvCons.car(Evaluator.LambdaEvaluator.getLambdaBody(lambda)), newEnv, cont);
+                    var args = Sicp.Lang.SvCons.listFromRvs(new Sicp.Lang.SvCons(new Sicp.Lang.SvSymbol('captured-continuation'), new Sicp.Lang.SvAny(cont)));
+                    return Evaluator.ApplicationEvaluator.evalCall(lambda, args, cont, _this.evaluator);
                 });
             };
             CallCCEvaluator.prototype.getLambda = function (sv) { return Sicp.Lang.SvCons.cadr(sv); };
@@ -268,10 +281,10 @@ var Sicp;
                 this.evaluator = evaluator;
             }
             CondEvaluator.prototype.matches = function (node) {
-                return this.evaluator.isTaggedList(node, 'cond');
+                return Evaluator.BaseEvaluator.isTaggedList(node, 'cond');
             };
             CondEvaluator.prototype.getCondClauses = function (cond) { return Sicp.Lang.SvCons.cdr(cond); };
-            CondEvaluator.prototype.isCondElseClause = function (clause) { return this.evaluator.isTaggedList(clause, "else"); };
+            CondEvaluator.prototype.isCondElseClause = function (clause) { return Evaluator.BaseEvaluator.isTaggedList(clause, "else"); };
             CondEvaluator.prototype.getCondPredicate = function (clause) { return Sicp.Lang.SvCons.car(clause); };
             CondEvaluator.prototype.getCondActions = function (clause) { return Sicp.Lang.SvCons.cdr(clause); };
             CondEvaluator.prototype.evaluate = function (sv, env, cont) {
@@ -305,7 +318,7 @@ var Sicp;
                 this.evaluator = evaluator;
             }
             DefinitionEvaluator.prototype.matches = function (node) {
-                return this.evaluator.isTaggedList(node, 'define');
+                return Evaluator.BaseEvaluator.isTaggedList(node, 'define');
             };
             DefinitionEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var _this = this;
@@ -330,7 +343,7 @@ var Sicp;
                 this.evaluator = evaluator;
             }
             IfEvaluator.prototype.matches = function (node) {
-                return this.evaluator.isTaggedList(node, 'if');
+                return Evaluator.BaseEvaluator.isTaggedList(node, 'if');
             };
             IfEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var _this = this;
@@ -357,7 +370,7 @@ var Sicp;
                 this.evaluator = evaluator;
             }
             LambdaEvaluator.prototype.matches = function (node) {
-                return this.evaluator.isTaggedList(node, 'lambda');
+                return Evaluator.BaseEvaluator.isTaggedList(node, 'lambda');
             };
             LambdaEvaluator.prototype.evaluate = function (sv, env, cont) {
                 return [Sicp.Lang.SvCons.listFromRvs(new Sicp.Lang.SvSymbol('procedure'), LambdaEvaluator.getLambdaParameters(sv), LambdaEvaluator.getLambdaBody(sv), new Sicp.Lang.SvAny(env)),
@@ -379,7 +392,7 @@ var Sicp;
                 this.evaluator = evaluator;
             }
             QuoteEvaluator.prototype.matches = function (node) {
-                return this.evaluator.isTaggedList(node, 'quote');
+                return Evaluator.BaseEvaluator.isTaggedList(node, 'quote');
             };
             QuoteEvaluator.prototype.evaluate = function (sv, env, cont) {
                 return [Sicp.Lang.SvCons.cdr(sv), cont];
@@ -433,7 +446,7 @@ var Sicp;
         var Interpreter = (function () {
             function Interpreter() {
             }
-            Interpreter.prototype.evaluateString = function (st) {
+            Interpreter.prototype.evaluateString = function (st, log) {
                 var parser = new Lang.Parser();
                 var exprs = parser.parse(st);
                 var env = new Lang.Env(null);
@@ -446,6 +459,7 @@ var Sicp;
                 env.define('-', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) - Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('+', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) + Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('/', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) / Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('trace', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { log(args.toString()); return Lang.SvCons.Nil; })));
                 var evaluator = new Sicp.Evaluator.BaseEvaluator();
                 evaluator.setEvaluators([
                     new Sicp.Evaluator.SelfEvaluator(),

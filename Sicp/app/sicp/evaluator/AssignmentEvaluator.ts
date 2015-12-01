@@ -6,7 +6,7 @@ module Sicp.Evaluator {
         constructor(private evaluator: Sicp.Evaluator.BaseEvaluator) {  }
 
         public matches(sv: Sicp.Lang.Sv): boolean {
-            return this.evaluator.isTaggedList(sv, 'set!');
+            return Evaluator.BaseEvaluator.isTaggedList(sv, 'set!');
         }
 
         public evaluate(sv: Sicp.Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Sicp.Lang.Pcont {

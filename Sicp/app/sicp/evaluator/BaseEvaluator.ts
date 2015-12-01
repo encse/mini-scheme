@@ -37,7 +37,7 @@ module Sicp.Evaluator {
             return [exprs, loop];
         }
 
-        public isTaggedList(node: Lang.Sv, tag: string) {
+        public static isTaggedList(node: Lang.Sv, tag: string) {
             if (!Lang.SvCons.matches(node)) return false;
             const car = Lang.SvCons.car(node);
             return Lang.SvSymbol.matches(car) && Lang.SvSymbol.val(car) === tag;

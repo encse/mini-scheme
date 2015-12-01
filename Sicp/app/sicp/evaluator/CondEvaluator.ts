@@ -5,11 +5,11 @@ module Sicp.Evaluator {
         constructor(private evaluator: Evaluator.BaseEvaluator) { }
 
         public matches(node: Lang.Sv): boolean {
-            return this.evaluator.isTaggedList(node, 'cond');
+            return Evaluator.BaseEvaluator.isTaggedList(node, 'cond');
         }
 
         private getCondClauses(cond: Lang.Sv) { return Lang.SvCons.cdr(cond); }
-        private isCondElseClause(clause: Lang.Sv) { return this.evaluator.isTaggedList(clause, "else"); }
+        private isCondElseClause(clause: Lang.Sv) { return Evaluator.BaseEvaluator.isTaggedList(clause, "else"); }
         private getCondPredicate(clause: Lang.Sv) { return Lang.SvCons.car(clause); }
         private getCondActions(clause: Lang.Sv) { return Lang.SvCons.cdr(clause); }
 

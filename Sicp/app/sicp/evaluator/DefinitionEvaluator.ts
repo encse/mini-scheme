@@ -4,7 +4,7 @@ module Sicp.Evaluator {
         constructor(private evaluator: Sicp.Evaluator.BaseEvaluator) {  }
 
         public matches(node: Lang.Sv): boolean {
-            return this.evaluator.isTaggedList(node, 'define');
+            return Evaluator.BaseEvaluator.isTaggedList(node, 'define');
         }
 
         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
