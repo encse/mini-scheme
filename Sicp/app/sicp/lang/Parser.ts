@@ -6,12 +6,15 @@
         private regexString = /^"([^\\\"]+|\\.)*"/;
         private regexWhiteSpace = /^\s*/;
         private regexBoolean = /^#t|^#f/;
+        private regexComment = /^;[^\$\r\n]*/;
 
         private tokens: Token[];
         private itoken = 0;
 
         public parse(st: string): SvCons {
-            this.tokens = this.getTokens(st).filter(token => token.kind !== TokenKind.WhiteSpace);
+            this.tokens = this.getTokens(st)
+                .filter(token => token.kind !== TokenKind.WhiteSpace && token.kind !== TokenKind.Comment);
+
             this.tokens.push(new Token(TokenKind.EOF, null));
             this.itoken = 0;
 
@@ -96,6 +99,8 @@
                     token = new Token(TokenKind.StringLit, this.regexString.exec(st)[0]);
                 else if (this.regexBoolean.test(st))
                     token = new Token(TokenKind.BooleanLit, this.regexBoolean.exec(st)[0]);
+                else if (this.regexComment.test(st))
+                    token = new Token(TokenKind.Comment, this.regexComment.exec(st)[0]);
                 else if (this.regexSymbol.test(st))
                     token = new Token(TokenKind.Symbol, this.regexSymbol.exec(st)[0]);
                 else if (this.regexWhiteSpace.test(st))
@@ -123,6 +128,7 @@
         NumberLit,
         Quote,
         StringLit,
+        Comment,
         EOF
     }
 

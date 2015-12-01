@@ -46,7 +46,7 @@
     <TypeScriptCompile Include="app\sicp\Interpreter.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\BeginEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\CondEvaluator.ts" />
-    <TypeScriptCompile Include="app\sicp\evaluator\DefinitionEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\DefineEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\Env.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\BaseEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\IfEvaluator.ts" />

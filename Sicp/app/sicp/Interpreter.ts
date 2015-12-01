@@ -14,7 +14,7 @@ module Sicp.Lang {
             env.define('-', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) - SvNumber.val(SvCons.cadr(args))))));
             env.define('+', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) + SvNumber.val(SvCons.cadr(args))))));
             env.define('/', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) / SvNumber.val(SvCons.cadr(args))))));
-            env.define('trace', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => { log(args.toString()); return SvCons.Nil; } )));
+            env.define('display', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => { log(args.toString()); return SvCons.Nil; } )));
 
             var evaluator = new Sicp.Evaluator.BaseEvaluator();
             evaluator.setEvaluators([
@@ -22,7 +22,7 @@ module Sicp.Lang {
                 new Evaluator.VariableEvaluator(),
                 new Sicp.Evaluator.QuoteEvaluator(evaluator),
                 new Sicp.Evaluator.CondEvaluator(evaluator),
-                new Sicp.Evaluator.DefinitionEvaluator(evaluator),
+                new Sicp.Evaluator.DefineEvaluator(evaluator),
                 new Sicp.Evaluator.AssignmentEvaluator(evaluator),
                 new Sicp.Evaluator.IfEvaluator(evaluator),
                 new Sicp.Evaluator.BeginEvaluator(evaluator),

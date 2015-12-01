@@ -8,14 +8,20 @@ module Sicp.Evaluator {
         }
 
         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Pcont {
-            return [Lang.SvCons.listFromRvs(
-                        new Lang.SvSymbol('procedure'),
+            return [LambdaEvaluator.createCompoundProcedure(
                         LambdaEvaluator.getLambdaParameters(sv),
                         LambdaEvaluator.getLambdaBody(sv),
-                        new Lang.SvAny(env))
+                        env)
                     ,cont];
         }
 
+        public static createCompoundProcedure(params: Lang.Sv, body: Lang.Sv, env: Lang.Env):Lang.Sv {
+            return Lang.SvCons.listFromRvs(
+                new Lang.SvSymbol('procedure'),
+                params,
+                body,
+                new Lang.SvAny(env));
+        }
         public static getLambdaParameters(expr: Lang.Sv) { return Lang.SvCons.cadr(expr); }
         public static getLambdaBody(expr: Lang.Sv) { return Lang.SvCons.cddr(expr); }
 

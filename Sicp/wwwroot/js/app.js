@@ -313,25 +313,37 @@ var Sicp;
 (function (Sicp) {
     var Evaluator;
     (function (Evaluator) {
-        var DefinitionEvaluator = (function () {
-            function DefinitionEvaluator(evaluator) {
+        var DefineEvaluator = (function () {
+            function DefineEvaluator(evaluator) {
                 this.evaluator = evaluator;
             }
-            DefinitionEvaluator.prototype.matches = function (node) {
+            DefineEvaluator.prototype.matches = function (node) {
                 return Evaluator.BaseEvaluator.isTaggedList(node, 'define');
             };
-            DefinitionEvaluator.prototype.evaluate = function (sv, env, cont) {
+            DefineEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var _this = this;
-                return this.evaluator.evaluate(this.getValue(sv), env, function (svValue) {
-                    env.define(Sicp.Lang.SvSymbol.val(_this.getVariable(sv)), svValue);
-                    return [svValue, cont];
-                });
+                if (Sicp.Lang.SvCons.matches(this.getHead(sv))) {
+                    //implicit lambda definition
+                    var lambda = Evaluator.LambdaEvaluator.createCompoundProcedure(this.getLambdaParameters(sv), this.getLambdaBody(sv), env);
+                    env.define(Sicp.Lang.SvSymbol.val(this.getFunctionName(sv)), lambda);
+                    return [lambda, cont];
+                }
+                else {
+                    return this.evaluator.evaluate(this.getValue(sv), env, function (svValue) {
+                        env.define(Sicp.Lang.SvSymbol.val(_this.getVariable(sv)), svValue);
+                        return [svValue, cont];
+                    });
+                }
             };
-            DefinitionEvaluator.prototype.getVariable = function (sv) { return Sicp.Lang.SvCons.cadr(sv); };
-            DefinitionEvaluator.prototype.getValue = function (sv) { return Sicp.Lang.SvCons.caddr(sv); };
-            return DefinitionEvaluator;
+            DefineEvaluator.prototype.getHead = function (sv) { return Sicp.Lang.SvCons.cadr(sv); };
+            DefineEvaluator.prototype.getVariable = function (sv) { return this.getHead(sv); };
+            DefineEvaluator.prototype.getValue = function (sv) { return Sicp.Lang.SvCons.caddr(sv); };
+            DefineEvaluator.prototype.getFunctionName = function (sv) { return Sicp.Lang.SvCons.car(this.getHead(sv)); };
+            DefineEvaluator.prototype.getLambdaParameters = function (sv) { return Sicp.Lang.SvCons.cdr(this.getHead(sv)); };
+            DefineEvaluator.prototype.getLambdaBody = function (sv) { return Sicp.Lang.SvCons.cddr(sv); };
+            return DefineEvaluator;
         })();
-        Evaluator.DefinitionEvaluator = DefinitionEvaluator;
+        Evaluator.DefineEvaluator = DefineEvaluator;
     })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
 })(Sicp || (Sicp = {}));
 var Sicp;
@@ -373,8 +385,11 @@ var Sicp;
                 return Evaluator.BaseEvaluator.isTaggedList(node, 'lambda');
             };
             LambdaEvaluator.prototype.evaluate = function (sv, env, cont) {
-                return [Sicp.Lang.SvCons.listFromRvs(new Sicp.Lang.SvSymbol('procedure'), LambdaEvaluator.getLambdaParameters(sv), LambdaEvaluator.getLambdaBody(sv), new Sicp.Lang.SvAny(env)),
+                return [LambdaEvaluator.createCompoundProcedure(LambdaEvaluator.getLambdaParameters(sv), LambdaEvaluator.getLambdaBody(sv), env),
                     cont];
+            };
+            LambdaEvaluator.createCompoundProcedure = function (params, body, env) {
+                return Sicp.Lang.SvCons.listFromRvs(new Sicp.Lang.SvSymbol('procedure'), params, body, new Sicp.Lang.SvAny(env));
             };
             LambdaEvaluator.getLambdaParameters = function (expr) { return Sicp.Lang.SvCons.cadr(expr); };
             LambdaEvaluator.getLambdaBody = function (expr) { return Sicp.Lang.SvCons.cddr(expr); };
@@ -459,14 +474,14 @@ var Sicp;
                 env.define('-', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) - Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('+', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) + Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('/', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) / Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
-                env.define('trace', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { log(args.toString()); return Lang.SvCons.Nil; })));
+                env.define('display', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { log(args.toString()); return Lang.SvCons.Nil; })));
                 var evaluator = new Sicp.Evaluator.BaseEvaluator();
                 evaluator.setEvaluators([
                     new Sicp.Evaluator.SelfEvaluator(),
                     new Sicp.Evaluator.VariableEvaluator(),
                     new Sicp.Evaluator.QuoteEvaluator(evaluator),
                     new Sicp.Evaluator.CondEvaluator(evaluator),
-                    new Sicp.Evaluator.DefinitionEvaluator(evaluator),
+                    new Sicp.Evaluator.DefineEvaluator(evaluator),
                     new Sicp.Evaluator.AssignmentEvaluator(evaluator),
                     new Sicp.Evaluator.IfEvaluator(evaluator),
                     new Sicp.Evaluator.BeginEvaluator(evaluator),
@@ -501,10 +516,12 @@ var Sicp;
                 this.regexString = /^"([^\\\"]+|\\.)*"/;
                 this.regexWhiteSpace = /^\s*/;
                 this.regexBoolean = /^#t|^#f/;
+                this.regexComment = /^;[^\$\r\n]*/;
                 this.itoken = 0;
             }
             Parser.prototype.parse = function (st) {
-                this.tokens = this.getTokens(st).filter(function (token) { return token.kind !== TokenKind.WhiteSpace; });
+                this.tokens = this.getTokens(st)
+                    .filter(function (token) { return token.kind !== TokenKind.WhiteSpace && token.kind !== TokenKind.Comment; });
                 this.tokens.push(new Token(TokenKind.EOF, null));
                 this.itoken = 0;
                 var rvs = [];
@@ -572,6 +589,8 @@ var Sicp;
                         token = new Token(TokenKind.StringLit, this.regexString.exec(st)[0]);
                     else if (this.regexBoolean.test(st))
                         token = new Token(TokenKind.BooleanLit, this.regexBoolean.exec(st)[0]);
+                    else if (this.regexComment.test(st))
+                        token = new Token(TokenKind.Comment, this.regexComment.exec(st)[0]);
                     else if (this.regexSymbol.test(st))
                         token = new Token(TokenKind.Symbol, this.regexSymbol.exec(st)[0]);
                     else if (this.regexWhiteSpace.test(st))
@@ -598,7 +617,8 @@ var Sicp;
             TokenKind[TokenKind["NumberLit"] = 5] = "NumberLit";
             TokenKind[TokenKind["Quote"] = 6] = "Quote";
             TokenKind[TokenKind["StringLit"] = 7] = "StringLit";
-            TokenKind[TokenKind["EOF"] = 8] = "EOF";
+            TokenKind[TokenKind["Comment"] = 8] = "Comment";
+            TokenKind[TokenKind["EOF"] = 9] = "EOF";
         })(TokenKind || (TokenKind = {}));
         var Token = (function () {
             function Token(kind, st) {
