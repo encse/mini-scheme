@@ -50,18 +50,20 @@ var Sicp;
                 if (name in this.obj)
                     return this.obj[name];
                 if (this.envParent == null)
-                    return Lang.SvCons.Nil;
+                    throw "no binding for " + name;
                 return this.envParent.get(name);
             };
             Env.prototype.set = function (name, rv) {
                 if (name in this.obj)
                     this.obj[name] = rv;
                 else if (this.envParent == null)
-                    throw "variable is not declared";
+                    throw name + " is not declared";
                 else
                     this.envParent.set(name, rv);
             };
             Env.prototype.define = function (name, value) {
+                if (name in this.obj)
+                    throw name + ' is already defined';
                 this.obj[name] = value;
             };
             return Env;
@@ -120,7 +122,7 @@ var Sicp;
                     if (!ApplicationEvaluator.isPrimitiveProcedure(operator) &&
                         !ApplicationEvaluator.isCompoundProcedure(operator) &&
                         !ApplicationEvaluator.isContinuation(operator))
-                        throw 'undefined procedure' + operator.toString();
+                        throw 'undefined procedure ' + ApplicationEvaluator.getOperator(sv).toString();
                     return _this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env, function (args) { return ApplicationEvaluator.evalCall(operator, args, cont, _this.evaluator); });
                 });
             };
@@ -411,6 +413,98 @@ var Sicp;
 (function (Sicp) {
     var Evaluator;
     (function (Evaluator) {
+        var LetEvaluator = (function () {
+            function LetEvaluator(evaluator) {
+                this.evaluator = evaluator;
+            }
+            LetEvaluator.prototype.matches = function (node) {
+                return LetEvaluator.isLet(node) || LetEvaluator.isLetStar(node) || LetEvaluator.isLetrec(node);
+            };
+            LetEvaluator.prototype.evaluate = function (sv, env, cont) {
+                var _this = this;
+                var defs = LetEvaluator.getDefs(sv);
+                var loop;
+                var newEnv = new Sicp.Lang.Env(env);
+                if (LetEvaluator.isLet(sv)) {
+                    var toBeDefined = [];
+                    loop = function (defs) {
+                        if (Sicp.Lang.SvCons.isNil(defs)) {
+                            toBeDefined.forEach(function (_a) {
+                                var svSymbol = _a[0], svValue = _a[1];
+                                newEnv.define(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
+                            });
+                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), newEnv, cont);
+                        }
+                        else {
+                            var def = Sicp.Lang.SvCons.car(defs);
+                            var svSymbol = Sicp.Lang.SvCons.car(def);
+                            return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), env, function (svVal) {
+                                toBeDefined.push([svSymbol, svVal]);
+                                var newDefs = Sicp.Lang.SvCons.cdr(defs);
+                                return new Sicp.Lang.SvThunk(function () { return loop(newDefs); });
+                            });
+                        }
+                    };
+                }
+                else if (LetEvaluator.isLetStar(sv)) {
+                    loop = function (defs) {
+                        if (Sicp.Lang.SvCons.isNil(defs)) {
+                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), newEnv, cont);
+                        }
+                        else {
+                            var def = Sicp.Lang.SvCons.car(defs);
+                            var svSymbol = Sicp.Lang.SvCons.car(def);
+                            return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), newEnv, function (svVal) {
+                                newEnv = new Sicp.Lang.Env(newEnv);
+                                newEnv.define(Sicp.Lang.SvSymbol.val(svSymbol), svVal);
+                                var newDefs = Sicp.Lang.SvCons.cdr(defs);
+                                return new Sicp.Lang.SvThunk(function () { return loop(newDefs); });
+                            });
+                        }
+                    };
+                }
+                else if (LetEvaluator.isLetrec(sv)) {
+                    var defsT = defs;
+                    while (!Sicp.Lang.SvCons.isNil(defsT)) {
+                        var def = Sicp.Lang.SvCons.car(defsT);
+                        newEnv.define(Sicp.Lang.SvSymbol.val(Sicp.Lang.SvCons.car(def)), Sicp.Lang.SvCons.Nil);
+                        defsT = Sicp.Lang.SvCons.cdr(defsT);
+                    }
+                    loop = function (defs) {
+                        if (Sicp.Lang.SvCons.isNil(defs)) {
+                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), newEnv, cont);
+                        }
+                        else {
+                            var def = Sicp.Lang.SvCons.car(defs);
+                            var svSymbol = Sicp.Lang.SvCons.car(def);
+                            return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), newEnv, function (svVal) {
+                                newEnv.set(Sicp.Lang.SvSymbol.val(svSymbol), svVal);
+                                var newDefs = Sicp.Lang.SvCons.cdr(defs);
+                                return new Sicp.Lang.SvThunk(function () { return loop(newDefs); });
+                            });
+                        }
+                    };
+                }
+                else
+                    throw 'uknown let kind';
+                return new Sicp.Lang.SvThunk(function () { return loop(defs); });
+            };
+            LetEvaluator.isLet = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let'); };
+            LetEvaluator.isLetStar = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let*'); };
+            LetEvaluator.isLetrec = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'letrec'); };
+            LetEvaluator.getDefs = function (sv) {
+                return Sicp.Lang.SvCons.cadr(sv);
+            };
+            LetEvaluator.getBody = function (sv) { return Sicp.Lang.SvCons.cddr(sv); };
+            return LetEvaluator;
+        })();
+        Evaluator.LetEvaluator = LetEvaluator;
+    })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
+})(Sicp || (Sicp = {}));
+var Sicp;
+(function (Sicp) {
+    var Evaluator;
+    (function (Evaluator) {
         var QuoteEvaluator = (function () {
             function QuoteEvaluator(evaluator) {
                 this.evaluator = evaluator;
@@ -508,8 +602,10 @@ var Sicp;
                 env.define('display', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { log(args.toString()); return Lang.SvCons.Nil; })));
                 var evaluator = new Sicp.Evaluator.BaseEvaluator();
                 evaluator.setEvaluators([
+                    new Sicp.Evaluator.ThunkEvaluator(evaluator),
                     new Sicp.Evaluator.SelfEvaluator(),
                     new Sicp.Evaluator.VariableEvaluator(),
+                    new Sicp.Evaluator.LetEvaluator(evaluator),
                     new Sicp.Evaluator.QuoteEvaluator(evaluator),
                     new Sicp.Evaluator.CondEvaluator(evaluator),
                     new Sicp.Evaluator.DefineEvaluator(evaluator),
@@ -518,7 +614,6 @@ var Sicp;
                     new Sicp.Evaluator.BeginEvaluator(evaluator),
                     new Sicp.Evaluator.LambdaEvaluator(evaluator),
                     new Sicp.Evaluator.CallCCEvaluator(evaluator),
-                    new Sicp.Evaluator.ThunkEvaluator(evaluator),
                     new Sicp.Evaluator.ApplicationEvaluator(evaluator)
                 ]);
                 var res = evaluator.evaluateList(exprs, new Lang.Env(env), function (sv) { return sv; });

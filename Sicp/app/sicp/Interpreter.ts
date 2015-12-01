@@ -16,20 +16,21 @@ module Sicp.Lang {
             env.define('/', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) / SvNumber.val(SvCons.cadr(args))))));
             env.define('display', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => { log(args.toString()); return SvCons.Nil; } )));
 
-            var evaluator = new Sicp.Evaluator.BaseEvaluator();
+            var evaluator = new Evaluator.BaseEvaluator();
             evaluator.setEvaluators([
-                new Sicp.Evaluator.SelfEvaluator(),
+                new Evaluator.ThunkEvaluator(evaluator),
+                new Evaluator.SelfEvaluator(),
                 new Evaluator.VariableEvaluator(),
-                new Sicp.Evaluator.QuoteEvaluator(evaluator),
-                new Sicp.Evaluator.CondEvaluator(evaluator),
-                new Sicp.Evaluator.DefineEvaluator(evaluator),
-                new Sicp.Evaluator.AssignmentEvaluator(evaluator),
-                new Sicp.Evaluator.IfEvaluator(evaluator),
-                new Sicp.Evaluator.BeginEvaluator(evaluator),
-                new Sicp.Evaluator.LambdaEvaluator(evaluator),
-                new Sicp.Evaluator.CallCCEvaluator(evaluator),
-                new Sicp.Evaluator.ThunkEvaluator(evaluator),
-                new Sicp.Evaluator.ApplicationEvaluator(evaluator)
+                new Evaluator.LetEvaluator(evaluator),
+                new Evaluator.QuoteEvaluator(evaluator),
+                new Evaluator.CondEvaluator(evaluator),
+                new Evaluator.DefineEvaluator(evaluator),
+                new Evaluator.AssignmentEvaluator(evaluator),
+                new Evaluator.IfEvaluator(evaluator),
+                new Evaluator.BeginEvaluator(evaluator),
+                new Evaluator.LambdaEvaluator(evaluator),
+                new Evaluator.CallCCEvaluator(evaluator),
+                new Evaluator.ApplicationEvaluator(evaluator)
             ]);
 
             var res: Sv = evaluator.evaluateList(exprs, new Env(env), sv => sv);

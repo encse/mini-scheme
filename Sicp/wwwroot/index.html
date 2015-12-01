@@ -78,7 +78,7 @@
 (for-each (lambda (x) (set! y (+ y x))) '(1 2 3))
 (trace 'sum: y)
 </pre>
-<pre> (define for-each 
+	            <pre> (define for-each 
     (lambda (dg lst)
         (cond 
             ((null? lst) ())
@@ -111,6 +111,34 @@
     (generate-digit)
     (generate-digit))
 </pre>
+	            <pre>(let ((factorial
+      (lambda (n)
+               (cond 
+                    ((= n 1)
+                        1 )
+                    (else 
+                        (* n (factorial (- n 1)))))
+            )))
+      (factorial 5))
+      
+     </pre>
+				<pre> (define (zero? n) (= n 0) )
+ 
+ (letrec ( 
+    (even?
+        (lambda (n)
+            (if (zero? n)
+                #t
+                (odd? (- n 1)))))
+    (odd?
+        (lambda (n)
+            (if (zero? n)
+                 #f
+                (even? (- n 1))))))
+    (even? 88)
+)
+      
+     </pre>
             </div> <!-- main-content -->
         </div> <!-- main -->
 

@@ -55,7 +55,7 @@ module Sicp.Evaluator {
                 if (!ApplicationEvaluator.isPrimitiveProcedure(operator) &&
                     !ApplicationEvaluator.isCompoundProcedure(operator) &&
                     !ApplicationEvaluator.isContinuation(operator))
-                    throw 'undefined procedure' + operator.toString();
+                    throw 'undefined procedure ' + ApplicationEvaluator.getOperator(sv).toString();
 
                 return this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env,
                     args => ApplicationEvaluator.evalCall(operator, args, cont, this.evaluator));

@@ -43,6 +43,7 @@
     <TypeScriptCompile Include="app\sicp\evaluator\CallCCEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\ApplicationEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\AssignmentEvaluator.ts" />
+    <TypeScriptCompile Include="app\sicp\evaluator\LetEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\IEvaluator.ts" />
     <TypeScriptCompile Include="app\sicp\Interpreter.ts" />
     <TypeScriptCompile Include="app\sicp\evaluator\BeginEvaluator.ts" />
