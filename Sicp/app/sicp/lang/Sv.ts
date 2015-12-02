@@ -1,6 +1,18 @@
 ﻿namespace Sicp.Lang {
-    export class Sv {
-        marker() {};
+    export class Sv implements ISourceInfo {
+
+        ilineStart: number;
+        icolStart: number;
+        ilineEnd: number;
+        icolEnd: number;
+
+        public withSourceInfo(first: ISourceInfo, last: ISourceInfo):Sv {
+            this.ilineStart = first.ilineStart;
+            this.icolStart = first.icolStart;
+            this.ilineEnd = first.ilineEnd;
+            this.icolEnd = first.icolEnd;
+            return this;
+        }
     }
     
     export class SvAtom extends Sv {

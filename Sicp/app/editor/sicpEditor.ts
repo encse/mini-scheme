@@ -6,7 +6,8 @@
 
         constructor(private editorId: string, private outputId: string) {
 
-            require(['ace/ace'], ace => {
+            require(['ace/ace'], (ace) => {
+                var Range = ace.require("ace/range").Range;
 
                 this.editor = ace.edit("editor");
                 this.editor.setTheme('ace/theme/clouds_midnight');
@@ -25,6 +26,8 @@
                         } catch (ex) {
                             log(ex);
                         }
+
+                        editor.getSession().addMarker(new Range(1,1,1,10), "hello", "blabla", false);
                     }
                 });
 

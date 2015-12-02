@@ -6,6 +6,7 @@ var Editor;
             this.editorId = editorId;
             this.outputId = outputId;
             require(['ace/ace'], function (ace) {
+                var Range = ace.require("ace/range").Range;
                 _this.editor = ace.edit("editor");
                 _this.editor.setTheme('ace/theme/clouds_midnight');
                 _this.editor.getSession().setMode('ace/mode/sicp');
@@ -24,6 +25,7 @@ var Editor;
                         catch (ex) {
                             log(ex);
                         }
+                        editor.getSession().addMarker(new Range(1, 1, 1, 10), "hello", "blabla", false);
                     }
                 });
                 _this.outputElement = document.getElementById(outputId);
@@ -643,7 +645,10 @@ var Sicp;
             Parser.prototype.parse = function (st) {
                 this.tokens = this.getTokens(st)
                     .filter(function (token) { return token.kind !== TokenKind.WhiteSpace && token.kind !== TokenKind.Comment; });
-                this.tokens.push(new Token(TokenKind.EOF, null));
+                var lastToken = this.tokens.length ? this.tokens[this.tokens.length - 1] : null;
+                this.tokens.push(lastToken ?
+                    new Token(TokenKind.EOF, "", lastToken.ilineEnd, lastToken.icolEnd + 1) :
+                    new Token(TokenKind.EOF, "", 0, 0));
                 this.itoken = 0;
                 var rvs = [];
                 while (!this.accept(TokenKind.EOF))
@@ -672,56 +677,64 @@ var Sicp;
             };
             Parser.prototype.parseExpression = function () {
                 var token = this.currentToken();
-                if (this.accept(TokenKind.Quote))
-                    return new Lang.SvCons(new Lang.SvSymbol("quote"), this.parseExpression());
+                if (this.accept(TokenKind.Quote)) {
+                    var svBody = this.parseExpression();
+                    return new Lang.SvCons(new Lang.SvSymbol("quote"), svBody).withSourceInfo(token, svBody);
+                }
                 if (this.accept(TokenKind.Symbol))
-                    return new Lang.SvSymbol(token.st);
+                    return new Lang.SvSymbol(token.st).withSourceInfo(token, token);
                 if (this.accept(TokenKind.BooleanLit))
-                    return new Lang.SvBool(token.st === "#t");
+                    return new Lang.SvBool(token.st === "#t").withSourceInfo(token, token);
                 if (this.accept(TokenKind.NumberLit))
-                    return new Lang.SvNumber(eval(token.st));
+                    return new Lang.SvNumber(eval(token.st)).withSourceInfo(token, token);
                 if (this.accept(TokenKind.StringLit))
-                    return new Lang.SvString(eval(token.st));
+                    return new Lang.SvString(eval(token.st)).withSourceInfo(token, token);
                 if (this.accept(TokenKind.LParen)) {
+                    var tokenStart = token;
                     var exprs = [];
                     while (!this.accept(TokenKind.RParen)) {
                         if (this.accept(TokenKind.EOF))
                             throw "unexpected end of input";
                         exprs.push(this.parseExpression());
                     }
-                    return Lang.SvCons.listFromRvArray(exprs);
+                    var tokenEnd = this.tokens[this.itoken - 1];
+                    return Lang.SvCons.listFromRvArray(exprs).withSourceInfo(tokenStart, tokenEnd);
                 }
                 throw "invalid token " + token;
             };
             Parser.prototype.getTokens = function (st) {
                 var tokens = [];
+                var iline = 0;
+                var icol = 0;
                 while (st.length > 0) {
                     var ch = st[0];
                     var token = void 0;
                     if (ch === "(")
-                        token = new Token(TokenKind.LParen, ch);
+                        token = new Token(TokenKind.LParen, ch, iline, icol);
                     else if (ch === ")")
-                        token = new Token(TokenKind.RParen, ch);
+                        token = new Token(TokenKind.RParen, ch, iline, icol);
                     else if (ch === "'")
-                        token = new Token(TokenKind.Quote, ch);
+                        token = new Token(TokenKind.Quote, ch, iline, icol);
                     else if (this.regexNumber.test(st))
-                        token = new Token(TokenKind.NumberLit, this.regexNumber.exec(st)[0]);
+                        token = new Token(TokenKind.NumberLit, this.regexNumber.exec(st)[0], iline, icol);
                     else if (this.regexString.test(st))
-                        token = new Token(TokenKind.StringLit, this.regexString.exec(st)[0]);
+                        token = new Token(TokenKind.StringLit, this.regexString.exec(st)[0], iline, icol);
                     else if (this.regexBoolean.test(st))
-                        token = new Token(TokenKind.BooleanLit, this.regexBoolean.exec(st)[0]);
+                        token = new Token(TokenKind.BooleanLit, this.regexBoolean.exec(st)[0], iline, icol);
                     else if (this.regexComment.test(st))
-                        token = new Token(TokenKind.Comment, this.regexComment.exec(st)[0]);
+                        token = new Token(TokenKind.Comment, this.regexComment.exec(st)[0], iline, icol);
                     else if (this.regexSymbol.test(st))
-                        token = new Token(TokenKind.Symbol, this.regexSymbol.exec(st)[0]);
+                        token = new Token(TokenKind.Symbol, this.regexSymbol.exec(st)[0], iline, icol);
                     else if (this.regexWhiteSpace.test(st))
-                        token = new Token(TokenKind.WhiteSpace, this.regexWhiteSpace.exec(st)[0]);
+                        token = new Token(TokenKind.WhiteSpace, this.regexWhiteSpace.exec(st)[0], iline, icol);
                     else
                         throw "invalid token at '" + st + "'";
                     tokens.push(token);
                     if (token.st.length === 0)
                         throw "invalid token";
                     st = st.substr(token.st.length);
+                    iline = token.ilineEnd;
+                    icol = token.icolEnd;
                 }
                 return tokens;
             };
@@ -742,11 +755,17 @@ var Sicp;
             TokenKind[TokenKind["EOF"] = 9] = "EOF";
         })(TokenKind || (TokenKind = {}));
         var Token = (function () {
-            function Token(kind, st) {
+            function Token(kind, st, ilineStart, icolStart) {
                 this.kind = kind;
                 this.st = st;
-                this.kind = kind;
-                this.st = st;
+                this.ilineStart = ilineStart;
+                this.icolStart = icolStart;
+                var lines = st.replace("\r", "").split('\n');
+                this.ilineEnd = this.ilineStart + lines.length - 1;
+                if (this.ilineStart === this.ilineEnd)
+                    this.icolEnd = icolStart + lines[0].length;
+                else
+                    this.icolEnd = lines[lines.length - 1].length;
             }
             return Token;
         })();
@@ -764,8 +783,13 @@ var Sicp;
         var Sv = (function () {
             function Sv() {
             }
-            Sv.prototype.marker = function () { };
-            ;
+            Sv.prototype.withSourceInfo = function (first, last) {
+                this.ilineStart = first.ilineStart;
+                this.icolStart = first.icolStart;
+                this.ilineEnd = first.ilineEnd;
+                this.icolEnd = first.icolEnd;
+                return this;
+            };
             return Sv;
         })();
         Lang.Sv = Sv;
