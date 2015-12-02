@@ -1,7 +1,7 @@
 module Sicp.Lang {
     export class Interpreter {
         
-        public evaluateString(st: string, log:(st:string)=>void) {
+        public evaluateString(st: string, log: (st: string) => void) {
             let parser = new Lang.Parser();
             let exprs = parser.parse(st);
             let env = new Env(null);
@@ -33,11 +33,16 @@ module Sicp.Lang {
                 new Evaluator.ApplicationEvaluator(evaluator)
             ]);
 
-            var res: Sv = evaluator.evaluateList(exprs, new Env(env), sv => sv);
-            while (Lang.SvThunk.matches(res))
-                res = Lang.SvThunk.val(res)();
+            return evaluator.evaluateList(exprs, new Env(env), sv => sv);
+
+
+        }
+
+        public step(sv: Sv): Sv {
+            if (Lang.SvThunk.matches(sv))
+                return Lang.SvThunk.val(sv)();
+            return null;
             
-            return res.toString();
         }
 
     }

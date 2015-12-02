@@ -3,11 +3,13 @@
     {
         editor: AceAjax.Editor;
         outputElement: HTMLElement;
-
+        prevMarker = null;
         constructor(private editorId: string, private outputId: string) {
-
+           
             require(['ace/ace'], (ace) => {
                 var Range = ace.require("ace/range").Range;
+                let sv: Sicp.Lang.Sv;
+                let interpreter = new Sicp.Lang.Interpreter();
 
                 this.editor = ace.edit("editor");
                 this.editor.setTheme('ace/theme/clouds_midnight');
@@ -21,13 +23,27 @@
                             st += stT + "\n";
                             this.setOutput(st);
                         }
+
                         try {
-                            log(new Sicp.Lang.Interpreter().evaluateString(editor.getValue(), log));
+                            if (!sv)
+                                sv = interpreter.evaluateString(editor.getValue(), log);
+                            else
+                                sv = interpreter.step(sv);
+
+                            if (this.prevMarker !== null)
+                                editor.getSession().removeMarker(this.prevMarker);
+                            this.prevMarker = editor.getSession().addMarker(new Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
+                            log(sv.toString());
                         } catch (ex) {
                             log(ex);
+                            sv = null;
+
                         }
 
-                        editor.getSession().addMarker(new Range(1,1,1,10), "hello", "blabla", false);
+                          
+                       
+                       
+
                     }
                 });
 

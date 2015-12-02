@@ -11,8 +11,9 @@
             width: 100%;
             margin: 10px auto;
         }
-		.hello {
+		.errorHighlight {
 			background: yellow;
+			position: absolute;
 		}
     </style>
 </head>
@@ -31,7 +32,7 @@
         <div id="main">
             <div id="main-content">
                 <h2>Mini scheme</h2>
-                <pre id="editor">(define for-each 
+                <div id="editor">(define for-each 
     (lambda (dg lst)
         (cond 
             ((null? lst) 42)
@@ -43,7 +44,7 @@
         
     )
 )
-(for-each (lambda (x) x) '(1 2 3))</pre>
+(for-each (lambda (x) x) '(1 2 3))</div>
                 <div id="output"></div>
                 <pre></pre>
                 <pre>(define f 

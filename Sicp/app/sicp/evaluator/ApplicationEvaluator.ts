@@ -13,7 +13,7 @@ module Sicp.Evaluator {
              
             if (this.isPrimitiveProcedure(operator)) {
                 var res = this.getPrimitiveProcedureDelegate(operator)(args);
-                return new Lang.SvThunk(() => cont(res));
+                return cont(res);
             }
             else if (this.isContinuation(operator)) {
                 var arg: Lang.Sv = Lang.SvCons.Nil;
@@ -23,7 +23,7 @@ module Sicp.Evaluator {
                     arg = Lang.SvCons.car(args);
                 }
                 var newCond = this.getContinuationFromCapturedContinuation(operator);
-                return new Lang.SvThunk(() => newCond(arg));
+                return newCond(arg);
             }
             else if(this.isCompoundProcedure(operator)) {
                 var newEnv = new Lang.Env(this.getProcedureEnv(operator));
@@ -92,15 +92,15 @@ module Sicp.Evaluator {
             var loop = (args: Lang.Sv) :Lang.Sv => {
                 if (Lang.SvCons.isNil(args)) {
                     var res = Lang.SvCons.listFromRvArray(evaluatedArgs);
-                    return new Lang.SvThunk(() => cont(res));
+                    return cont(res);
                 }
                 return this.evaluator.evaluate(Lang.SvCons.car(args), env, (evaluatedArg: Lang.Sv) => {
                     evaluatedArgs.push(evaluatedArg);
                     var nextArgs = Lang.SvCons.cdr(args);
-                    return new Lang.SvThunk(() => loop(nextArgs));
+                    return loop(nextArgs);
                 });
             };
-            return new Lang.SvThunk(() => loop(args));
+            return loop(args);
         }
     }
 }

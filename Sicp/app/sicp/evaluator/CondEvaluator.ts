@@ -17,7 +17,7 @@ module Sicp.Evaluator {
 
             var loop = (clauses: Lang.Sv) => {
                 if (Lang.SvCons.isNil(clauses))
-                    return new Lang.SvThunk( () => cont(clauses));
+                    return cont(clauses);
 
                 var clause = Lang.SvCons.car(clauses);
                 if (this.isCondElseClause(clause))
@@ -28,13 +28,13 @@ module Sicp.Evaluator {
                         return this.evaluator.evaluateList(this.getCondActions(clause), env, cont);
                     else {
                         var nextClauses = Lang.SvCons.cdr(clauses);
-                        return new Lang.SvThunk(() => loop(nextClauses));
+                        return loop(nextClauses);
                     }
                 });
             };
 
             var clauses = this.getCondClauses(sv);
-            return new Lang.SvThunk(() => loop(clauses));
+            return loop(clauses);
         }
     }
 }

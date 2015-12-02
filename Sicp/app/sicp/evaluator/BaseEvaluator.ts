@@ -16,7 +16,7 @@ module Sicp.Evaluator {
 
             for (var i = 0; i < this.evaluators.length;i++) {
                 if (this.evaluators[i].matches(sv))
-                    return this.evaluators[i].evaluate(sv, env, cont);
+                    return new Lang.SvThunk(() => this.evaluators[i].evaluate(sv, env, cont)).withSourceInfo(sv,sv);
             }
             throw 'cannot evaluate ' + sv.toString();
         }
@@ -26,16 +26,16 @@ module Sicp.Evaluator {
             var lastSv: Lang.Sv = Lang.SvCons.Nil;
             var loop = (exprs: Lang.Sv) => {
                 if (Lang.SvCons.isNil(exprs))
-                    return new Lang.SvThunk( () => cont(lastSv));
+                    return cont(lastSv);
 
                 return this.evaluate(Sicp.Lang.SvCons.car(exprs), env, (sv: Lang.Sv) => {
                     lastSv = sv;
                     var nextExprs = Lang.SvCons.cdr(exprs);
-                    return new Lang.SvThunk(() => loop(nextExprs));
+                    return loop(nextExprs);
                 });
             };
 
-            return new Lang.SvThunk( () => loop(exprs));
+            return loop(exprs);
         }
 
         public static isTaggedList(node: Lang.Sv, tag: string) {

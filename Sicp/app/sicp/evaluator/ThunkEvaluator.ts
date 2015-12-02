@@ -10,7 +10,7 @@ module Sicp.Evaluator {
 
         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
             var thunkRes = Lang.SvThunk.val(sv)();
-            return new Lang.SvThunk(() => cont(thunkRes));
+            return cont(thunkRes);
         }
     }
 }

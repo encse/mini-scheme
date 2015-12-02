@@ -5,8 +5,11 @@ var Editor;
             var _this = this;
             this.editorId = editorId;
             this.outputId = outputId;
+            this.prevMarker = null;
             require(['ace/ace'], function (ace) {
                 var Range = ace.require("ace/range").Range;
+                var sv;
+                var interpreter = new Sicp.Lang.Interpreter();
                 _this.editor = ace.edit("editor");
                 _this.editor.setTheme('ace/theme/clouds_midnight');
                 _this.editor.getSession().setMode('ace/mode/sicp');
@@ -20,12 +23,19 @@ var Editor;
                             _this.setOutput(st);
                         };
                         try {
-                            log(new Sicp.Lang.Interpreter().evaluateString(editor.getValue(), log));
+                            if (!sv)
+                                sv = interpreter.evaluateString(editor.getValue(), log);
+                            else
+                                sv = interpreter.step(sv);
+                            if (_this.prevMarker !== null)
+                                editor.getSession().removeMarker(_this.prevMarker);
+                            _this.prevMarker = editor.getSession().addMarker(new Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
+                            log(sv.toString());
                         }
                         catch (ex) {
                             log(ex);
+                            sv = null;
                         }
-                        editor.getSession().addMarker(new Range(1, 1, 1, 10), "hello", "blabla", false);
                     }
                 });
                 _this.outputElement = document.getElementById(outputId);
@@ -87,7 +97,7 @@ var Sicp;
             ApplicationEvaluator.evalCall = function (operator, args, cont, evaluator) {
                 if (this.isPrimitiveProcedure(operator)) {
                     var res = this.getPrimitiveProcedureDelegate(operator)(args);
-                    return new Sicp.Lang.SvThunk(function () { return cont(res); });
+                    return cont(res);
                 }
                 else if (this.isContinuation(operator)) {
                     var arg = Sicp.Lang.SvCons.Nil;
@@ -97,7 +107,7 @@ var Sicp;
                         arg = Sicp.Lang.SvCons.car(args);
                     }
                     var newCond = this.getContinuationFromCapturedContinuation(operator);
-                    return new Sicp.Lang.SvThunk(function () { return newCond(arg); });
+                    return newCond(arg);
                 }
                 else if (this.isCompoundProcedure(operator)) {
                     var newEnv = new Sicp.Lang.Env(this.getProcedureEnv(operator));
@@ -152,15 +162,15 @@ var Sicp;
                 var loop = function (args) {
                     if (Sicp.Lang.SvCons.isNil(args)) {
                         var res = Sicp.Lang.SvCons.listFromRvArray(evaluatedArgs);
-                        return new Sicp.Lang.SvThunk(function () { return cont(res); });
+                        return cont(res);
                     }
                     return _this.evaluator.evaluate(Sicp.Lang.SvCons.car(args), env, function (evaluatedArg) {
                         evaluatedArgs.push(evaluatedArg);
                         var nextArgs = Sicp.Lang.SvCons.cdr(args);
-                        return new Sicp.Lang.SvThunk(function () { return loop(nextArgs); });
+                        return loop(nextArgs);
                     });
                 };
-                return new Sicp.Lang.SvThunk(function () { return loop(args); });
+                return loop(args);
             };
             return ApplicationEvaluator;
         })();
@@ -182,7 +192,7 @@ var Sicp;
                 var _this = this;
                 return this.evaluator.evaluate(this.getValue(sv), env, function (svValue) {
                     env.set(Sicp.Lang.SvSymbol.val(_this.getVariable(sv)), svValue);
-                    return new Sicp.Lang.SvThunk(function () { return cont(svValue); });
+                    return cont(svValue);
                 });
             };
             AssignmentEvaluator.prototype.getVariable = function (node) { return Sicp.Lang.SvCons.cadr(node); };
@@ -206,9 +216,10 @@ var Sicp;
                 return true;
             };
             BaseEvaluator.prototype.evaluate = function (sv, env, cont) {
+                var _this = this;
                 for (var i = 0; i < this.evaluators.length; i++) {
                     if (this.evaluators[i].matches(sv))
-                        return this.evaluators[i].evaluate(sv, env, cont);
+                        return new Sicp.Lang.SvThunk(function () { return _this.evaluators[i].evaluate(sv, env, cont); }).withSourceInfo(sv, sv);
                 }
                 throw 'cannot evaluate ' + sv.toString();
             };
@@ -217,14 +228,14 @@ var Sicp;
                 var lastSv = Sicp.Lang.SvCons.Nil;
                 var loop = function (exprs) {
                     if (Sicp.Lang.SvCons.isNil(exprs))
-                        return new Sicp.Lang.SvThunk(function () { return cont(lastSv); });
+                        return cont(lastSv);
                     return _this.evaluate(Sicp.Lang.SvCons.car(exprs), env, function (sv) {
                         lastSv = sv;
                         var nextExprs = Sicp.Lang.SvCons.cdr(exprs);
-                        return new Sicp.Lang.SvThunk(function () { return loop(nextExprs); });
+                        return loop(nextExprs);
                     });
                 };
-                return new Sicp.Lang.SvThunk(function () { return loop(exprs); });
+                return loop(exprs);
             };
             BaseEvaluator.isTaggedList = function (node, tag) {
                 if (!Sicp.Lang.SvCons.matches(node))
@@ -301,7 +312,7 @@ var Sicp;
                 var _this = this;
                 var loop = function (clauses) {
                     if (Sicp.Lang.SvCons.isNil(clauses))
-                        return new Sicp.Lang.SvThunk(function () { return cont(clauses); });
+                        return cont(clauses);
                     var clause = Sicp.Lang.SvCons.car(clauses);
                     if (_this.isCondElseClause(clause))
                         return _this.evaluator.evaluateList(_this.getCondActions(clause), env, cont);
@@ -310,12 +321,12 @@ var Sicp;
                             return _this.evaluator.evaluateList(_this.getCondActions(clause), env, cont);
                         else {
                             var nextClauses = Sicp.Lang.SvCons.cdr(clauses);
-                            return new Sicp.Lang.SvThunk(function () { return loop(nextClauses); });
+                            return loop(nextClauses);
                         }
                     });
                 };
                 var clauses = this.getCondClauses(sv);
-                return new Sicp.Lang.SvThunk(function () { return loop(clauses); });
+                return loop(clauses);
             };
             return CondEvaluator;
         })();
@@ -339,12 +350,12 @@ var Sicp;
                     //implicit lambda definition
                     var lambda = Evaluator.LambdaEvaluator.createCompoundProcedure(this.getLambdaParameters(sv), this.getLambdaBody(sv), env);
                     env.define(Sicp.Lang.SvSymbol.val(this.getFunctionName(sv)), lambda);
-                    return new Sicp.Lang.SvThunk(function () { return cont(lambda); });
+                    return cont(lambda);
                 }
                 else {
                     return this.evaluator.evaluate(this.getValue(sv), env, function (svValue) {
                         env.define(Sicp.Lang.SvSymbol.val(_this.getVariable(sv)), svValue);
-                        return new Sicp.Lang.SvThunk(function () { return cont(svValue); });
+                        return cont(svValue);
                     });
                 }
             };
@@ -399,7 +410,7 @@ var Sicp;
             };
             LambdaEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var proc = LambdaEvaluator.createCompoundProcedure(LambdaEvaluator.getLambdaParameters(sv), LambdaEvaluator.getLambdaBody(sv), env);
-                return new Sicp.Lang.SvThunk(function () { return cont(proc); });
+                return cont(proc);
             };
             LambdaEvaluator.createCompoundProcedure = function (params, body, env) {
                 return Sicp.Lang.SvCons.listFromRvs(new Sicp.Lang.SvSymbol('procedure'), params, body, new Sicp.Lang.SvAny(env));
@@ -443,7 +454,7 @@ var Sicp;
                             return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), env, function (svVal) {
                                 toBeDefined.push([svSymbol, svVal]);
                                 var newDefs = Sicp.Lang.SvCons.cdr(defs);
-                                return new Sicp.Lang.SvThunk(function () { return loop(newDefs); });
+                                return loop(newDefs);
                             });
                         }
                     };
@@ -460,7 +471,7 @@ var Sicp;
                                 newEnv = new Sicp.Lang.Env(newEnv);
                                 newEnv.define(Sicp.Lang.SvSymbol.val(svSymbol), svVal);
                                 var newDefs = Sicp.Lang.SvCons.cdr(defs);
-                                return new Sicp.Lang.SvThunk(function () { return loop(newDefs); });
+                                return loop(newDefs);
                             });
                         }
                     };
@@ -482,14 +493,14 @@ var Sicp;
                             return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), newEnv, function (svVal) {
                                 newEnv.set(Sicp.Lang.SvSymbol.val(svSymbol), svVal);
                                 var newDefs = Sicp.Lang.SvCons.cdr(defs);
-                                return new Sicp.Lang.SvThunk(function () { return loop(newDefs); });
+                                return loop(newDefs);
                             });
                         }
                     };
                 }
                 else
                     throw 'uknown let kind';
-                return new Sicp.Lang.SvThunk(function () { return loop(defs); });
+                return loop(defs);
             };
             LetEvaluator.isLet = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let'); };
             LetEvaluator.isLetStar = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let*'); };
@@ -516,7 +527,7 @@ var Sicp;
             };
             QuoteEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var res = Sicp.Lang.SvCons.cdr(sv);
-                return new Sicp.Lang.SvThunk(function () { return cont(res); });
+                return cont(res);
             };
             return QuoteEvaluator;
         })();
@@ -535,7 +546,7 @@ var Sicp;
                     Sicp.Lang.SvNumber.matches(node) || Sicp.Lang.SvCons.isNil(node);
             };
             SelfEvaluator.prototype.evaluate = function (sv, env, cont) {
-                return new Sicp.Lang.SvThunk(function () { return cont(sv); });
+                return cont(sv);
             };
             return SelfEvaluator;
         })();
@@ -555,7 +566,7 @@ var Sicp;
             };
             ThunkEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var thunkRes = Sicp.Lang.SvThunk.val(sv)();
-                return new Sicp.Lang.SvThunk(function () { return cont(thunkRes); });
+                return cont(thunkRes);
             };
             return ThunkEvaluator;
         })();
@@ -574,7 +585,7 @@ var Sicp;
             };
             VariableEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var res = env.get(Sicp.Lang.SvSymbol.val(sv));
-                return new Sicp.Lang.SvThunk(function () { return cont(res); });
+                return cont(res);
             };
             return VariableEvaluator;
         })();
@@ -618,10 +629,12 @@ var Sicp;
                     new Sicp.Evaluator.CallCCEvaluator(evaluator),
                     new Sicp.Evaluator.ApplicationEvaluator(evaluator)
                 ]);
-                var res = evaluator.evaluateList(exprs, new Lang.Env(env), function (sv) { return sv; });
-                while (Lang.SvThunk.matches(res))
-                    res = Lang.SvThunk.val(res)();
-                return res.toString();
+                return evaluator.evaluateList(exprs, new Lang.Env(env), function (sv) { return sv; });
+            };
+            Interpreter.prototype.step = function (sv) {
+                if (Lang.SvThunk.matches(sv))
+                    return Lang.SvThunk.val(sv)();
+                return null;
             };
             return Interpreter;
         })();
@@ -786,8 +799,8 @@ var Sicp;
             Sv.prototype.withSourceInfo = function (first, last) {
                 this.ilineStart = first.ilineStart;
                 this.icolStart = first.icolStart;
-                this.ilineEnd = first.ilineEnd;
-                this.icolEnd = first.icolEnd;
+                this.ilineEnd = last.ilineEnd;
+                this.icolEnd = last.icolEnd;
                 return this;
             };
             return Sv;

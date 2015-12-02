@@ -9,8 +9,8 @@
         public withSourceInfo(first: ISourceInfo, last: ISourceInfo):Sv {
             this.ilineStart = first.ilineStart;
             this.icolStart = first.icolStart;
-            this.ilineEnd = first.ilineEnd;
-            this.icolEnd = first.icolEnd;
+            this.ilineEnd = last.ilineEnd;
+            this.icolEnd = last.icolEnd;
             return this;
         }
     }

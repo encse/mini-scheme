@@ -25,7 +25,7 @@ module Sicp.Evaluator {
                         return this.evaluator.evaluate(Lang.SvCons.cadr(def), env, (svVal) => {
                             toBeDefined.push([svSymbol, svVal]);
                             var newDefs = Lang.SvCons.cdr(defs);
-                            return new Lang.SvThunk(() => loop(newDefs));
+                            return loop(newDefs);
                         });
                     }
                 };
@@ -41,7 +41,7 @@ module Sicp.Evaluator {
                             newEnv = new Lang.Env(newEnv);
                             newEnv.define(Lang.SvSymbol.val(svSymbol), svVal);
                             var newDefs = Lang.SvCons.cdr(defs);
-                            return new Lang.SvThunk(() => loop(newDefs));
+                            return loop(newDefs);
                         });
                     }
                 };
@@ -63,7 +63,7 @@ module Sicp.Evaluator {
                         return this.evaluator.evaluate(Lang.SvCons.cadr(def), newEnv, (svVal) => {
                             newEnv.set(Lang.SvSymbol.val(svSymbol), svVal);
                             var newDefs = Lang.SvCons.cdr(defs);
-                            return new Lang.SvThunk(() => loop(newDefs));
+                            return loop(newDefs);
                         });
                     }
                 };
@@ -71,7 +71,7 @@ module Sicp.Evaluator {
             else
                 throw 'uknown let kind';
 
-            return new Lang.SvThunk(() => loop(defs));
+            return loop(defs);
             
         }
 
