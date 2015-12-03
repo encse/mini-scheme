@@ -5,44 +5,83 @@ var Editor;
             var _this = this;
             this.editorId = editorId;
             this.outputId = outputId;
-            this.prevMarker = null;
+            this.currentMarker = null;
+            this.currentTimeout = null;
+            this.isRunning = false;
+            this.interpreter = new Sicp.Lang.Interpreter();
             require(['ace/ace'], function (ace) {
-                var Range = ace.require("ace/range").Range;
-                var sv;
-                var interpreter = new Sicp.Lang.Interpreter();
+                _this.Range = ace.require("ace/range").Range;
                 _this.editor = ace.edit("editor");
                 _this.editor.setTheme('ace/theme/clouds_midnight');
                 _this.editor.getSession().setMode('ace/mode/sicp');
                 _this.editor.commands.addCommand({
-                    name: 'Evaluate',
+                    name: 'Run',
+                    bindKey: { win: 'Ctrl-R', mac: 'Command-R' },
+                    exec: function (editor) {
+                        _this.run();
+                    }
+                });
+                _this.editor.commands.addCommand({
+                    name: 'Next',
                     bindKey: { win: 'Ctrl-E', mac: 'Command-E' },
                     exec: function (editor) {
-                        var st = "";
-                        var log = function (stT) {
-                            st += stT + "\n";
-                            _this.setOutput(st);
-                        };
-                        try {
-                            if (!sv)
-                                sv = interpreter.evaluateString(editor.getValue(), log);
-                            else
-                                sv = interpreter.step(sv);
-                            if (_this.prevMarker !== null)
-                                editor.getSession().removeMarker(_this.prevMarker);
-                            _this.prevMarker = editor.getSession().addMarker(new Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
-                            log(sv.toString());
-                        }
-                        catch (ex) {
-                            log(ex);
-                            sv = null;
-                        }
+                        _this.step();
                     }
                 });
                 _this.outputElement = document.getElementById(outputId);
             });
         }
-        SicpEditor.prototype.setOutput = function (st) {
-            this.outputElement.innerText = st;
+        SicpEditor.prototype.clearOutput = function () {
+            this.outputElement.innerText = "";
+        };
+        SicpEditor.prototype.log = function (st) {
+            this.outputElement.innerText = this.outputElement.innerText === "" ? st : this.outputElement.innerText + "\n" + st;
+        };
+        SicpEditor.prototype.setMarker = function (sv) {
+            this.clearMarker();
+            if (sv) {
+                this.currentMarker = this.editor.getSession().addMarker(new this.Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
+            }
+        };
+        SicpEditor.prototype.clearMarker = function () {
+            if (this.currentMarker !== null)
+                this.editor.getSession().removeMarker(this.currentMarker);
+        };
+        SicpEditor.prototype.step = function () {
+            try {
+                if (!this.sv)
+                    this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
+                else
+                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 100 : 1);
+            }
+            catch (ex) {
+                this.log(ex);
+                this.sv = null;
+            }
+            if (this.sv == null)
+                this.isRunning = false;
+            if (!this.isRunning)
+                this.setMarker(this.sv);
+            else
+                this.currentTimeout = window.setTimeout(this.step.bind(this), 0);
+        };
+        SicpEditor.prototype.stop = function () {
+            this.sv = null;
+            this.isRunning = false;
+            this.clearMarker();
+            this.clearOutput();
+            clearTimeout(this.currentTimeout);
+        };
+        SicpEditor.prototype.run = function () {
+            this.stop();
+            this.continue();
+        };
+        SicpEditor.prototype.continue = function () {
+            this.isRunning = true;
+            this.step();
+        };
+        SicpEditor.prototype.break = function () {
+            this.isRunning = false;
         };
         return SicpEditor;
     })();
@@ -599,7 +638,10 @@ var Sicp;
                 env.define('+', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) + Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('/', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) / Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('zero?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvBool(Lang.SvNumber.val(Lang.SvCons.car(args)) === 0); })));
-                env.define('display', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { log(args.toString()); return Lang.SvCons.Nil; })));
+                env.define('display', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) {
+                    log(args.toString());
+                    return Lang.SvCons.Nil;
+                })));
                 var evaluator = new Sicp.Evaluator.BaseEvaluator();
                 evaluator.setEvaluators([
                     new Sicp.Evaluator.ThunkEvaluator(evaluator),
@@ -616,12 +658,17 @@ var Sicp;
                     new Sicp.Evaluator.CallCCEvaluator(evaluator),
                     new Sicp.Evaluator.ApplicationEvaluator(evaluator)
                 ]);
-                return evaluator.evaluateList(exprs, new Lang.Env(env), function (sv) { return sv; });
+                return evaluator.evaluateList(exprs, new Lang.Env(env), function (sv) {
+                    log(sv.toString());
+                    return sv;
+                });
             };
-            Interpreter.prototype.step = function (sv) {
-                if (Lang.SvThunk.matches(sv))
-                    return Lang.SvThunk.val(sv)();
-                return null;
+            Interpreter.prototype.step = function (sv, stepCount) {
+                while (Lang.SvThunk.matches(sv) && stepCount > 0) {
+                    sv = Lang.SvThunk.val(sv)();
+                    stepCount--;
+                }
+                return Lang.SvThunk.matches(sv) ? sv : null;
             };
             return Interpreter;
         })();

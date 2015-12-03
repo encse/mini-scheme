@@ -31,7 +31,12 @@
 
         <div id="main">
             <div id="main-content">
-                <h2>Mini scheme</h2>
+	            <h2>Mini scheme</h2>
+	            <button id="btnRun">run</button>
+	            <button id="btnBreak">break</button>
+	            <button id="btnStop">stop</button>
+	            <button id="btnStep">step</button>
+	            <button id="btnContinue">continue</button>
                 <div id="editor">(let* ((yin
          ((lambda (cc) (display "#\@") cc) (call-with-current-continuation (lambda (c) c))))
        (yang
@@ -156,7 +161,12 @@
     </script>
     <script src="js/app.js"></script>
     <script>
-        new Editor.SicpEditor("editor", "output");
+		var sicpEditor = new Editor.SicpEditor("editor", "output");
+		document.getElementById("btnBreak").onclick = function() { sicpEditor.break(); };
+		document.getElementById("btnContinue").onclick = function () { sicpEditor.continue(); };
+		document.getElementById("btnRun").onclick = function () { sicpEditor.run(); };
+		document.getElementById("btnStep").onclick = function () { sicpEditor.step(); };
+		document.getElementById("btnStop").onclick =function () { sicpEditor.stop(); };
     </script>
 </body>
 </html>
