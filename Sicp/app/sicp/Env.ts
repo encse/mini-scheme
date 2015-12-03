@@ -24,11 +24,14 @@ module Sicp.Lang {
                 this.envParent.set(name, rv);
         }
 
-        public define(name: string, value: any) {
+        public define(name: string, value: Sv) {
             if (name in this.obj)
                 throw name + ' is already defined';
             this.obj[name] = value;
         }
 
+        setOrDefine(name: string, value: Sv) {
+            this.obj[name] = value; 
+        }
     }
 }

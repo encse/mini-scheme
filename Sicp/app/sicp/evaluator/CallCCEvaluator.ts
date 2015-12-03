@@ -12,11 +12,15 @@ module Sicp.Evaluator {
         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
             /* (call-with-current-continuation (lambda (hop) ...)) */
             return this.evaluator.evaluate(this.getLambda(sv), env, lambda => {
-                var args = Lang.SvCons.listFromRvs(new Lang.SvCons(new Lang.SvSymbol('captured-continuation'), new Lang.SvAny(cont)));
+                var args = Lang.SvCons.listFromRvs(CallCCEvaluator.createCcProcedure(cont));
                 return ApplicationEvaluator.evalCall(lambda, args, cont, this.evaluator);
             });
         }
 
         getLambda(sv: Lang.Sv) { return Lang.SvCons.cadr(sv); }
+
+        private static createCcProcedure(cont: Lang.Cont): Lang.Sv {
+            return new Lang.SvCons(new Lang.SvSymbol('captured-continuation'), new Lang.SvAny(cont));
+        }
     }
 }

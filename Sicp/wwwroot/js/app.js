@@ -78,6 +78,9 @@ var Sicp;
                     throw name + ' is already defined';
                 this.obj[name] = value;
             };
+            Env.prototype.setOrDefine = function (name, value) {
+                this.obj[name] = value;
+            };
             return Env;
         })();
         Lang.Env = Env;
@@ -96,8 +99,7 @@ var Sicp;
             };
             ApplicationEvaluator.evalCall = function (operator, args, cont, evaluator) {
                 if (this.isPrimitiveProcedure(operator)) {
-                    var res = this.getPrimitiveProcedureDelegate(operator)(args);
-                    return cont(res);
+                    return cont(this.getPrimitiveProcedureDelegate(operator)(args));
                 }
                 else if (this.isContinuation(operator)) {
                     var arg = Sicp.Lang.SvCons.Nil;
@@ -106,8 +108,7 @@ var Sicp;
                             throw 'too many argument';
                         arg = Sicp.Lang.SvCons.car(args);
                     }
-                    var newCond = this.getContinuationFromCapturedContinuation(operator);
-                    return newCond(arg);
+                    return this.getContinuationFromCapturedContinuation(operator)(arg);
                 }
                 else if (this.isCompoundProcedure(operator)) {
                     var newEnv = new Sicp.Lang.Env(this.getProcedureEnv(operator));
@@ -156,21 +157,20 @@ var Sicp;
             ApplicationEvaluator.getPrimitiveProcedureDelegate = function (expr) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cdr(expr)); };
             ApplicationEvaluator.getOperator = function (expr) { return Sicp.Lang.SvCons.car(expr); };
             ApplicationEvaluator.getArguments = function (expr) { return Sicp.Lang.SvCons.cdr(expr); };
-            ApplicationEvaluator.prototype.evaluateArgs = function (args, env, cont) {
+            ApplicationEvaluator.prototype.evaluateArgs = function (args0, env, cont) {
                 var _this = this;
-                var evaluatedArgs = [];
-                var loop = function (args) {
+                var evaluatedArgs = new Sicp.Lang.SvCons(null, null);
+                var loop = function (evaluatedArgsLast, args) {
                     if (Sicp.Lang.SvCons.isNil(args)) {
-                        var res = Sicp.Lang.SvCons.listFromRvArray(evaluatedArgs);
-                        return cont(res);
+                        return cont(evaluatedArgs);
                     }
                     return _this.evaluator.evaluate(Sicp.Lang.SvCons.car(args), env, function (evaluatedArg) {
-                        evaluatedArgs.push(evaluatedArg);
-                        var nextArgs = Sicp.Lang.SvCons.cdr(args);
-                        return loop(nextArgs);
+                        Sicp.Lang.SvCons.setCar(evaluatedArgsLast, evaluatedArg);
+                        Sicp.Lang.SvCons.setCdr(evaluatedArgsLast, new Sicp.Lang.SvCons(null, null));
+                        return loop(Sicp.Lang.SvCons.cdr(evaluatedArgsLast), Sicp.Lang.SvCons.cdr(args));
                     });
                 };
-                return loop(args);
+                return loop(evaluatedArgs, args0);
             };
             return ApplicationEvaluator;
         })();
@@ -283,11 +283,14 @@ var Sicp;
                 var _this = this;
                 /* (call-with-current-continuation (lambda (hop) ...)) */
                 return this.evaluator.evaluate(this.getLambda(sv), env, function (lambda) {
-                    var args = Sicp.Lang.SvCons.listFromRvs(new Sicp.Lang.SvCons(new Sicp.Lang.SvSymbol('captured-continuation'), new Sicp.Lang.SvAny(cont)));
+                    var args = Sicp.Lang.SvCons.listFromRvs(CallCCEvaluator.createCcProcedure(cont));
                     return Evaluator.ApplicationEvaluator.evalCall(lambda, args, cont, _this.evaluator);
                 });
             };
             CallCCEvaluator.prototype.getLambda = function (sv) { return Sicp.Lang.SvCons.cadr(sv); };
+            CallCCEvaluator.createCcProcedure = function (cont) {
+                return new Sicp.Lang.SvCons(new Sicp.Lang.SvSymbol('captured-continuation'), new Sicp.Lang.SvAny(cont));
+            };
             return CallCCEvaluator;
         })();
         Evaluator.CallCCEvaluator = CallCCEvaluator;
@@ -435,72 +438,55 @@ var Sicp;
             };
             LetEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var _this = this;
-                var defs = LetEvaluator.getDefs(sv);
-                var loop;
-                var newEnv = new Sicp.Lang.Env(env);
                 if (LetEvaluator.isLet(sv)) {
-                    var toBeDefined = [];
-                    loop = function (defs) {
-                        if (Sicp.Lang.SvCons.isNil(defs)) {
-                            toBeDefined.forEach(function (_a) {
-                                var svSymbol = _a[0], svValue = _a[1];
-                                newEnv.define(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
-                            });
-                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), newEnv, cont);
-                        }
-                        else {
-                            var def = Sicp.Lang.SvCons.car(defs);
-                            var svSymbol = Sicp.Lang.SvCons.car(def);
-                            return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), env, function (svVal) {
-                                toBeDefined.push([svSymbol, svVal]);
-                                var newDefs = Sicp.Lang.SvCons.cdr(defs);
-                                return loop(newDefs);
-                            });
-                        }
+                    var loop = function (letEnv, defs) {
+                        if (Sicp.Lang.SvCons.isNil(defs))
+                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
+                        var def = Sicp.Lang.SvCons.car(defs);
+                        var svSymbol = Sicp.Lang.SvCons.car(def);
+                        return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), env, function (svValue) {
+                            letEnv.define(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
+                            return loop(letEnv, Sicp.Lang.SvCons.cdr(defs));
+                        });
                     };
+                    return loop(new Sicp.Lang.Env(env), LetEvaluator.getDefs(sv));
                 }
                 else if (LetEvaluator.isLetStar(sv)) {
-                    loop = function (defs) {
-                        if (Sicp.Lang.SvCons.isNil(defs)) {
-                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), newEnv, cont);
-                        }
-                        else {
-                            var def = Sicp.Lang.SvCons.car(defs);
-                            var svSymbol = Sicp.Lang.SvCons.car(def);
-                            return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), newEnv, function (svVal) {
-                                newEnv = new Sicp.Lang.Env(newEnv);
-                                newEnv.define(Sicp.Lang.SvSymbol.val(svSymbol), svVal);
-                                var newDefs = Sicp.Lang.SvCons.cdr(defs);
-                                return loop(newDefs);
-                            });
-                        }
+                    var loop = function (letEnv, defs) {
+                        if (Sicp.Lang.SvCons.isNil(defs))
+                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
+                        var def = Sicp.Lang.SvCons.car(defs);
+                        var svSymbol = Sicp.Lang.SvCons.car(def);
+                        return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), letEnv, function (svValue) {
+                            letEnv = new Sicp.Lang.Env(letEnv);
+                            letEnv.setOrDefine(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
+                            return loop(letEnv, Sicp.Lang.SvCons.cdr(defs));
+                        });
                     };
+                    return loop(env, LetEvaluator.getDefs(sv));
                 }
                 else if (LetEvaluator.isLetrec(sv)) {
-                    var defsT = defs;
+                    var newEnv = new Sicp.Lang.Env(env);
+                    var defsT = LetEvaluator.getDefs(sv);
                     while (!Sicp.Lang.SvCons.isNil(defsT)) {
                         var def = Sicp.Lang.SvCons.car(defsT);
                         newEnv.define(Sicp.Lang.SvSymbol.val(Sicp.Lang.SvCons.car(def)), Sicp.Lang.SvCons.Nil);
                         defsT = Sicp.Lang.SvCons.cdr(defsT);
                     }
-                    loop = function (defs) {
-                        if (Sicp.Lang.SvCons.isNil(defs)) {
-                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), newEnv, cont);
-                        }
-                        else {
-                            var def = Sicp.Lang.SvCons.car(defs);
-                            var svSymbol = Sicp.Lang.SvCons.car(def);
-                            return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), newEnv, function (svVal) {
-                                newEnv.set(Sicp.Lang.SvSymbol.val(svSymbol), svVal);
-                                var newDefs = Sicp.Lang.SvCons.cdr(defs);
-                                return loop(newDefs);
-                            });
-                        }
+                    var loop = function (letEnv, defs) {
+                        if (Sicp.Lang.SvCons.isNil(defs))
+                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
+                        var def = Sicp.Lang.SvCons.car(defs);
+                        var svSymbol = Sicp.Lang.SvCons.car(def);
+                        return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), letEnv, function (svValue) {
+                            letEnv.set(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
+                            return loop(letEnv, Sicp.Lang.SvCons.cdr(defs));
+                        });
                     };
+                    return loop(newEnv, LetEvaluator.getDefs(sv));
                 }
                 else
                     throw 'uknown let kind';
-                return loop(defs);
             };
             LetEvaluator.isLet = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let'); };
             LetEvaluator.isLetStar = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let*'); };
@@ -612,6 +598,7 @@ var Sicp;
                 env.define('-', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) - Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('+', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) + Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('/', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) / Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('zero?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvBool(Lang.SvNumber.val(Lang.SvCons.car(args)) === 0); })));
                 env.define('display', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { log(args.toString()); return Lang.SvCons.Nil; })));
                 var evaluator = new Sicp.Evaluator.BaseEvaluator();
                 evaluator.setEvaluators([
@@ -866,6 +853,18 @@ var Sicp;
                 if (!SvCons.matches(node))
                     throw "Cons expected";
                 return node._cdr;
+            };
+            SvCons.setCar = function (cons, newCar) {
+                if (!SvCons.matches(cons))
+                    throw "Cons expected";
+                cons._car = newCar;
+                return cons;
+            };
+            SvCons.setCdr = function (cons, newCdr) {
+                if (!SvCons.matches(cons))
+                    throw "Cons expected";
+                cons._cdr = newCdr;
+                return cons;
             };
             SvCons.cadr = function (node) {
                 return this.car(this.cdr(node));

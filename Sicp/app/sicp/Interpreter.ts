@@ -14,6 +14,7 @@ module Sicp.Lang {
             env.define('-', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) - SvNumber.val(SvCons.cadr(args))))));
             env.define('+', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) + SvNumber.val(SvCons.cadr(args))))));
             env.define('/', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) / SvNumber.val(SvCons.cadr(args))))));
+            env.define('zero?', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvBool(SvNumber.val(SvCons.car(args)) === 0))));
             env.define('display', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => { log(args.toString()); return SvCons.Nil; } )));
 
             var evaluator = new Evaluator.BaseEvaluator();

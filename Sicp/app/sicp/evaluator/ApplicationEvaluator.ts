@@ -12,31 +12,28 @@ module Sicp.Evaluator {
         public static evalCall(operator:Lang.Sv, args: Lang.Sv, cont:Lang.Cont, evaluator:Evaluator.BaseEvaluator):Lang.Sv {
              
             if (this.isPrimitiveProcedure(operator)) {
-                var res = this.getPrimitiveProcedureDelegate(operator)(args);
-                return cont(res);
+                return cont(this.getPrimitiveProcedureDelegate(operator)(args));
             }
             else if (this.isContinuation(operator)) {
-                var arg: Lang.Sv = Lang.SvCons.Nil;
+                let arg: Lang.Sv = Lang.SvCons.Nil;
                 if (!Lang.SvCons.isNil(args)) {
                     if (!Lang.SvCons.isNil(Lang.SvCons.cdr(args)))
                         throw 'too many argument';
                     arg = Lang.SvCons.car(args);
                 }
-                var newCond = this.getContinuationFromCapturedContinuation(operator);
-                return newCond(arg);
+                return this.getContinuationFromCapturedContinuation(operator)(arg);
             }
             else if(this.isCompoundProcedure(operator)) {
-                var newEnv = new Lang.Env(this.getProcedureEnv(operator));
-                var params = this.getProcedureParameters(operator);
+                const newEnv = new Lang.Env(this.getProcedureEnv(operator));
+                let params = this.getProcedureParameters(operator);
 
                 while (!Lang.SvCons.isNil(args) || !Lang.SvCons.isNil(params)) {
                     if (Lang.SvCons.isNil(args))
                         throw 'not enough argument';
                     if (Lang.SvCons.isNil(params))
                         throw 'too many argument';
-
-                    var parameter = Sicp.Lang.SvSymbol.val(Lang.SvCons.car(params));
-                    var arg = Lang.SvCons.car(args);
+                    const parameter = Sicp.Lang.SvSymbol.val(Lang.SvCons.car(params));
+                    const arg = Lang.SvCons.car(args);
                     newEnv.define(parameter, arg);
 
                     params = Lang.SvCons.cdr(params);
@@ -86,21 +83,19 @@ module Sicp.Evaluator {
         private static getOperator(expr: Lang.Sv) { return Lang.SvCons.car(expr); }
         private static getArguments(expr: Lang.Sv) { return Lang.SvCons.cdr(expr); }
 
-        evaluateArgs(args: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
-            var evaluatedArgs: Lang.Sv[] = [];
-
-            var loop = (args: Lang.Sv) :Lang.Sv => {
+        evaluateArgs(args0: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
+            const evaluatedArgs = new Lang.SvCons(null, null);
+            const loop = (evaluatedArgsLast: Lang.Sv, args: Lang.Sv) :Lang.Sv => {
                 if (Lang.SvCons.isNil(args)) {
-                    var res = Lang.SvCons.listFromRvArray(evaluatedArgs);
-                    return cont(res);
+                    return cont(evaluatedArgs);
                 }
                 return this.evaluator.evaluate(Lang.SvCons.car(args), env, (evaluatedArg: Lang.Sv) => {
-                    evaluatedArgs.push(evaluatedArg);
-                    var nextArgs = Lang.SvCons.cdr(args);
-                    return loop(nextArgs);
+                    Lang.SvCons.setCar(evaluatedArgsLast, evaluatedArg);
+                    Lang.SvCons.setCdr(evaluatedArgsLast, new Lang.SvCons(null, null));
+                    return loop(Lang.SvCons.cdr(evaluatedArgsLast), Lang.SvCons.cdr(args));
                 });
             };
-            return loop(args);
+            return loop(evaluatedArgs, args0);
         }
     }
 }

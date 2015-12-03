@@ -66,6 +66,17 @@
             return (<SvCons>node)._cdr;
         }
 
+        static setCar(cons: Sv, newCar: Sv) {
+            if (!SvCons.matches(cons)) throw "Cons expected";
+            (<SvCons>cons)._car = newCar;
+            return cons;
+        }
+
+        static setCdr(cons: Sv, newCdr: Sv) {
+            if (!SvCons.matches(cons)) throw "Cons expected";
+            (<SvCons>cons)._cdr = newCdr;
+            return cons;
+        }
         public static cadr(node: Sv) {
             return this.car(this.cdr(node));
         }
@@ -111,6 +122,7 @@
             st += ')';
             return st;
         }
+
     }
 
     export class SvAny extends Sv {

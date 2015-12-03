@@ -7,71 +7,63 @@ module Sicp.Evaluator {
         }
 
         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
-            const defs = LetEvaluator.getDefs(sv);
-            let loop: Lang.Cont;
-            let newEnv = new Lang.Env(env);
 
             if (LetEvaluator.isLet(sv)) {
-                var toBeDefined:[[Lang.Sv, Lang.Sv]] = <[[Lang.Sv, Lang.Sv]]>[];
-                loop = (defs: Lang.Sv) => {
-                    if (Lang.SvCons.isNil(defs)) {
-                        toBeDefined.forEach(([svSymbol, svValue]: [Lang.Sv, Lang.Sv]) => {
-                            newEnv.define(Lang.SvSymbol.val(svSymbol), svValue);
-                        });
-                        return this.evaluator.evaluateList(LetEvaluator.getBody(sv), newEnv, cont);
-                    } else {
-                        const def = Lang.SvCons.car(defs);
-                        var svSymbol = Lang.SvCons.car(def);
-                        return this.evaluator.evaluate(Lang.SvCons.cadr(def), env, (svVal) => {
-                            toBeDefined.push([svSymbol, svVal]);
-                            var newDefs = Lang.SvCons.cdr(defs);
-                            return loop(newDefs);
-                        });
-                    }
+                const loop = (letEnv: Lang.Env, defs: Lang.Sv) => {
+                    if (Lang.SvCons.isNil(defs)) 
+                        return this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
+                    
+                    const def = Lang.SvCons.car(defs);
+                    const svSymbol = Lang.SvCons.car(def);
+                    return this.evaluator.evaluate(Lang.SvCons.cadr(def), env, (svValue) => {
+                        letEnv.define(Lang.SvSymbol.val(svSymbol), svValue);
+                        return loop(letEnv, Lang.SvCons.cdr(defs));
+                    });
                 };
+                return loop(new Lang.Env(env), LetEvaluator.getDefs(sv));
+
             }
             else if (LetEvaluator.isLetStar(sv)) {
-                loop = (defs: Lang.Sv) => {
-                    if (Lang.SvCons.isNil(defs)) {
-                        return this.evaluator.evaluateList(LetEvaluator.getBody(sv), newEnv, cont);
-                    } else {
-                        const def = Lang.SvCons.car(defs);
-                        var svSymbol = Lang.SvCons.car(def);
-                        return this.evaluator.evaluate(Lang.SvCons.cadr(def), newEnv, (svVal) => {
-                            newEnv = new Lang.Env(newEnv);
-                            newEnv.define(Lang.SvSymbol.val(svSymbol), svVal);
-                            var newDefs = Lang.SvCons.cdr(defs);
-                            return loop(newDefs);
-                        });
-                    }
+                const loop = (letEnv:Lang.Env, defs: Lang.Sv) => {
+                    if (Lang.SvCons.isNil(defs)) 
+                        return this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
+                    
+                    const def = Lang.SvCons.car(defs);
+                    const svSymbol = Lang.SvCons.car(def);
+                    return this.evaluator.evaluate(Lang.SvCons.cadr(def), letEnv, (svValue) => {
+                        letEnv = new Lang.Env(letEnv);
+                        letEnv.setOrDefine(Lang.SvSymbol.val(svSymbol), svValue);
+                        return loop(letEnv, Lang.SvCons.cdr(defs));
+                    });
                 };
+                return loop(env, LetEvaluator.getDefs(sv));
             }
             else if (LetEvaluator.isLetrec(sv)) {
-                let defsT = defs;
+                const newEnv = new Lang.Env(env); 
+                let defsT = LetEvaluator.getDefs(sv);
                 while (!Lang.SvCons.isNil(defsT)) {
-                    let def = Lang.SvCons.car(defsT);
+                    const def = Lang.SvCons.car(defsT);
                     newEnv.define(Lang.SvSymbol.val(Lang.SvCons.car(def)), Lang.SvCons.Nil);
                     defsT = Lang.SvCons.cdr(defsT);
                 }
 
-                loop = (defs: Lang.Sv) => {
-                    if (Lang.SvCons.isNil(defs)) {
-                        return this.evaluator.evaluateList(LetEvaluator.getBody(sv), newEnv, cont);
-                    } else {
-                        const def = Lang.SvCons.car(defs);
-                        var svSymbol = Lang.SvCons.car(def);
-                        return this.evaluator.evaluate(Lang.SvCons.cadr(def), newEnv, (svVal) => {
-                            newEnv.set(Lang.SvSymbol.val(svSymbol), svVal);
-                            var newDefs = Lang.SvCons.cdr(defs);
-                            return loop(newDefs);
-                        });
-                    }
+                const loop = (letEnv: Lang.Env, defs: Lang.Sv) => {
+                    if (Lang.SvCons.isNil(defs))
+                        return this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
+                  
+                    const def = Lang.SvCons.car(defs);
+                    const svSymbol = Lang.SvCons.car(def);
+                    return this.evaluator.evaluate(Lang.SvCons.cadr(def), letEnv, (svValue) => {
+                        letEnv.set(Lang.SvSymbol.val(svSymbol), svValue);
+                        return loop(letEnv, Lang.SvCons.cdr(defs));
+                    });
                 };
+
+                return loop(newEnv, LetEvaluator.getDefs(sv));
             }
             else
                 throw 'uknown let kind';
 
-            return loop(defs);
             
         }
 

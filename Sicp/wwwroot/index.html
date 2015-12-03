@@ -32,19 +32,11 @@
         <div id="main">
             <div id="main-content">
                 <h2>Mini scheme</h2>
-                <div id="editor">(define for-each 
-    (lambda (dg lst)
-        (cond 
-            ((null? lst) 42)
-            (else 
-                (dg (car lst))
-                (for-each dg (cdr lst))
-            )
-        )
-        
-    )
-)
-(for-each (lambda (x) x) '(1 2 3))</div>
+                <div id="editor">(let* ((yin
+         ((lambda (cc) (display "#\@") cc) (call-with-current-continuation (lambda (c) c))))
+       (yang
+         ((lambda (cc) (display "#\*") cc) (call-with-current-continuation (lambda (c) c)))))
+    (yin yang))</div>
                 <div id="output"></div>
                 <pre></pre>
                 <pre>(define f 
