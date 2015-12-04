@@ -15,6 +15,10 @@
 			background: yellow;
 			position: absolute;
 		}
+		pre {
+			margin: 10px 0;
+			background: lightgray;
+		}
     </style>
 </head>
 <body>
@@ -123,7 +127,7 @@
       (factorial 5))
       
      </pre>
-				<pre> (define (zero? n) (= n 0) )
+	            <pre> (define (zero? n) (= n 0) )
  
  (letrec ( 
     (even?
@@ -140,6 +144,30 @@
 )
       
      </pre>
+	            <pre>
+					(define alma ())
+(define flag #t)
+(define (f)
+    (display 1 "alma" "fa")
+    (call-with-current-continuation
+        (lambda (x) 
+            (set! alma x)
+        )
+    )
+    (display 2)
+    (display 3)
+    "vege"
+)
+(f)
+(cond 
+    (flag
+        (set! flag #f)
+        (alma)
+    )
+)
+
+</pre>
+
             </div> <!-- main-content -->
         </div> <!-- main -->
 
