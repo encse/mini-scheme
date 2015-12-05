@@ -11,13 +11,58 @@
         interpreter = new Sicp.Lang.Interpreter();
         Range: any;
 
-        constructor(private editorId: string, private outputId: string) {
+        constructor(private editorDiv: HTMLElement, private samples:string[]) {
            
             require(['ace/ace'], (ace) => {
                 this.Range = ace.require("ace/range").Range;
-               
+
+                var btnRun: HTMLButtonElement = document.createElement('button');
+                btnRun.innerText = "run";
+                btnRun.onclick = () => this.run();
+                editorDiv.appendChild(btnRun);
+
+                var btnBreak: HTMLButtonElement = document.createElement('button');
+                btnBreak.innerText = "break";
+                btnBreak.onclick = () => this.break();
+                editorDiv.appendChild(btnBreak);
+
+                var btnStop: HTMLButtonElement = document.createElement('button');
+                btnStop.innerText = "stop";
+                btnStop.onclick = () => this.stop();
+                editorDiv.appendChild(btnStop);
+
+                var btnStep: HTMLButtonElement = document.createElement('button');
+                btnStep.innerText = "step";
+                btnStep.onclick = () => this.step();
+                editorDiv.appendChild(btnStep);
+
+                var btnContinue:HTMLButtonElement = document.createElement('button');
+                btnContinue.innerText = "continue";
+                btnContinue.onclick = () => this.continue();
+                editorDiv.appendChild(btnContinue);
+
                 
-                this.editor = ace.edit("editor");
+                if (samples) {
+                    var selectSample: HTMLSelectElement = document.createElement('select');
+                    editorDiv.appendChild(selectSample);
+                    samples.forEach(sample => {
+                        const option = document.createElement('option');
+                        option.text = sample.split('\n')[0].trim();
+                        option.value = sample;
+                        selectSample.appendChild(option);
+
+                    });
+                    selectSample.onchange = () => { this.editor.setValue(selectSample.options[selectSample.selectedIndex].value, -1); };
+                }
+
+                var editorWindow = document.createElement('div');
+                editorWindow.classList.add("editorWindow");
+                editorDiv.appendChild(editorWindow);
+
+                this.outputElement = document.createElement('div');
+                editorDiv.appendChild(this.outputElement);
+
+                this.editor = ace.edit(editorWindow);
                 this.editor.setTheme('ace/theme/clouds_midnight');
                 this.editor.getSession().setMode('ace/mode/sicp');
                 this.editor.commands.addCommand({
@@ -34,7 +79,6 @@
                         this.step();
                     }
                 });
-                this.outputElement = document.getElementById(outputId);
             });
         }
 

@@ -37,6 +37,7 @@
     export class SvCons extends Sv {
         public constructor(private _car: Sv, private _cdr: Sv) { super(); }
 
+        public static cons(car:Sv, cdr:Sv) { return new SvCons(car, cdr); }
         public static Nil = new SvCons(null, null);
 
         public static listFromRvs(...rvs: Sv[]): Sv {
@@ -50,7 +51,9 @@
             return res;
         }
 
-        public static matches(node: Sv) { return node instanceof SvCons; }
+        public static matches(node: Sv) {
+             return node instanceof SvCons;
+        }
 
         public static isNil(node: Sv) {
             return node === SvCons.Nil || (SvCons.matches(node) && SvCons.car(node) === null && SvCons.cdr(node) === null);
@@ -97,6 +100,15 @@
             return this.car(this.cdddr(node));
         }
 
+        public static lengthI(lst: Sv) {
+            let l = 0;
+            while (!this.isNil(lst)) {
+                l++;
+                lst = this.cdr(lst);
+            }
+            return new SvNumber(l);
+        }
+
         public toString(): string {
             let st = '(';
             let first = true;
@@ -141,7 +153,9 @@
     }
 
     export class SvBool extends Sv {
-        public constructor(public _val: boolean) { super(); }
+        public static True = new SvBool(true);
+        public static False = new SvBool(false);
+        constructor(public _val: boolean) { super(); }
 
         public static matches(node: Sv) { return node instanceof SvBool; }
 
@@ -160,6 +174,36 @@
 
         public toString(): string {
             return this._val ? "#t" : "#f";
+        }
+
+        static not(car: Sv) {
+            return this.isTrue(car) ? SvBool.False : SvBool.True;
+        }
+
+        static and(lst: Sv) {
+            while (!SvCons.isNil(lst)) {
+                if (!this.isTrue(SvCons.car(lst)))
+                    return SvBool.False;
+
+                lst = SvCons.cdr(lst);
+            }
+
+            return SvBool.True;
+        }
+
+        static or(lst: Sv) {
+            while (!SvCons.isNil(lst)) {
+                if (this.isTrue(SvCons.car(lst)))
+                    return SvBool.True;
+
+                lst = SvCons.cdr(lst);
+            }
+
+            return SvBool.False;
+        }
+
+        public static fromBoolean(f: boolean) {
+            return f ? SvBool.True : SvBool.False;
         }
     }
 

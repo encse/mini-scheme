@@ -1,17 +1,53 @@
 var Editor;
 (function (Editor) {
     var SicpEditor = (function () {
-        function SicpEditor(editorId, outputId) {
+        function SicpEditor(editorDiv, samples) {
             var _this = this;
-            this.editorId = editorId;
-            this.outputId = outputId;
+            this.editorDiv = editorDiv;
+            this.samples = samples;
             this.currentMarker = null;
             this.currentTimeout = null;
             this.isRunning = false;
             this.interpreter = new Sicp.Lang.Interpreter();
             require(['ace/ace'], function (ace) {
                 _this.Range = ace.require("ace/range").Range;
-                _this.editor = ace.edit("editor");
+                var btnRun = document.createElement('button');
+                btnRun.innerText = "run";
+                btnRun.onclick = function () { return _this.run(); };
+                editorDiv.appendChild(btnRun);
+                var btnBreak = document.createElement('button');
+                btnBreak.innerText = "break";
+                btnBreak.onclick = function () { return _this.break(); };
+                editorDiv.appendChild(btnBreak);
+                var btnStop = document.createElement('button');
+                btnStop.innerText = "stop";
+                btnStop.onclick = function () { return _this.stop(); };
+                editorDiv.appendChild(btnStop);
+                var btnStep = document.createElement('button');
+                btnStep.innerText = "step";
+                btnStep.onclick = function () { return _this.step(); };
+                editorDiv.appendChild(btnStep);
+                var btnContinue = document.createElement('button');
+                btnContinue.innerText = "continue";
+                btnContinue.onclick = function () { return _this.continue(); };
+                editorDiv.appendChild(btnContinue);
+                if (samples) {
+                    var selectSample = document.createElement('select');
+                    editorDiv.appendChild(selectSample);
+                    samples.forEach(function (sample) {
+                        var option = document.createElement('option');
+                        option.text = sample.split('\n')[0].trim();
+                        option.value = sample;
+                        selectSample.appendChild(option);
+                    });
+                    selectSample.onchange = function () { _this.editor.setValue(selectSample.options[selectSample.selectedIndex].value, -1); };
+                }
+                var editorWindow = document.createElement('div');
+                editorWindow.classList.add("editorWindow");
+                editorDiv.appendChild(editorWindow);
+                _this.outputElement = document.createElement('div');
+                editorDiv.appendChild(_this.outputElement);
+                _this.editor = ace.edit(editorWindow);
                 _this.editor.setTheme('ace/theme/clouds_midnight');
                 _this.editor.getSession().setMode('ace/mode/sicp');
                 _this.editor.commands.addCommand({
@@ -28,7 +64,6 @@ var Editor;
                         _this.step();
                     }
                 });
-                _this.outputElement = document.getElementById(outputId);
             });
         }
         SicpEditor.prototype.clearOutput = function () {
@@ -629,15 +664,22 @@ var Sicp;
                 var exprs = parser.parse(st);
                 var env = new Lang.Env(null);
                 env.define('cons', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvCons(Lang.SvCons.car(args), Lang.SvCons.cadr(args)); })));
-                env.define('null?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvBool(Lang.SvCons.isNil(Lang.SvCons.car(args))); })));
+                env.define('null?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvCons.isNil(Lang.SvCons.car(args))); })));
                 env.define('car', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.car(Lang.SvCons.car(args)); })));
+                env.define('cadr', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.cadr(Lang.SvCons.car(args)); })));
                 env.define('cdr', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.cdr(Lang.SvCons.car(args)); })));
-                env.define('=', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvBool(Lang.SvNumber.val(Lang.SvCons.car(args)) === Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('=', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) === Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('>', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) > Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('<', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) < Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('*', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) * Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('-', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) - Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('+', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) + Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
                 env.define('/', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) / Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
-                env.define('zero?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvBool(Lang.SvNumber.val(Lang.SvCons.car(args)) === 0); })));
+                env.define('zero?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) === 0); })));
+                env.define('length', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.lengthI(Lang.SvCons.car(args)); })));
+                env.define('not', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.not(Lang.SvCons.car(args)); })));
+                env.define('and', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.and(args); })));
+                env.define('or', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.or(args); })));
                 env.define('display', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) {
                     log(args.toString());
                     return Lang.SvCons.Nil;
@@ -731,7 +773,7 @@ var Sicp;
                 if (this.accept(TokenKind.Symbol))
                     return new Lang.SvSymbol(token.st).withSourceInfo(token, token);
                 if (this.accept(TokenKind.BooleanLit))
-                    return new Lang.SvBool(token.st === "#t").withSourceInfo(token, token);
+                    return Lang.SvBool.fromBoolean(token.st === "#t").withSourceInfo(token, token);
                 if (this.accept(TokenKind.NumberLit))
                     return new Lang.SvNumber(eval(token.st)).withSourceInfo(token, token);
                 if (this.accept(TokenKind.StringLit))
@@ -874,6 +916,7 @@ var Sicp;
                 this._car = _car;
                 this._cdr = _cdr;
             }
+            SvCons.cons = function (car, cdr) { return new SvCons(car, cdr); };
             SvCons.listFromRvs = function () {
                 var rvs = [];
                 for (var _i = 0; _i < arguments.length; _i++) {
@@ -887,7 +930,9 @@ var Sicp;
                     res = new SvCons(rvs[j], res);
                 return res;
             };
-            SvCons.matches = function (node) { return node instanceof SvCons; };
+            SvCons.matches = function (node) {
+                return node instanceof SvCons;
+            };
             SvCons.isNil = function (node) {
                 return node === SvCons.Nil || (SvCons.matches(node) && SvCons.car(node) === null && SvCons.cdr(node) === null);
             };
@@ -927,6 +972,14 @@ var Sicp;
             };
             SvCons.cadddr = function (node) {
                 return this.car(this.cdddr(node));
+            };
+            SvCons.lengthI = function (lst) {
+                var l = 0;
+                while (!this.isNil(lst)) {
+                    l++;
+                    lst = this.cdr(lst);
+                }
+                return new SvNumber(l);
             };
             SvCons.prototype.toString = function () {
                 var st = '(';
@@ -995,6 +1048,30 @@ var Sicp;
             SvBool.prototype.toString = function () {
                 return this._val ? "#t" : "#f";
             };
+            SvBool.not = function (car) {
+                return this.isTrue(car) ? SvBool.False : SvBool.True;
+            };
+            SvBool.and = function (lst) {
+                while (!SvCons.isNil(lst)) {
+                    if (!this.isTrue(SvCons.car(lst)))
+                        return SvBool.False;
+                    lst = SvCons.cdr(lst);
+                }
+                return SvBool.True;
+            };
+            SvBool.or = function (lst) {
+                while (!SvCons.isNil(lst)) {
+                    if (this.isTrue(SvCons.car(lst)))
+                        return SvBool.True;
+                    lst = SvCons.cdr(lst);
+                }
+                return SvBool.False;
+            };
+            SvBool.fromBoolean = function (f) {
+                return f ? SvBool.True : SvBool.False;
+            };
+            SvBool.True = new SvBool(true);
+            SvBool.False = new SvBool(false);
             return SvBool;
         })(Sv);
         Lang.SvBool = SvBool;

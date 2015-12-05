@@ -62,7 +62,7 @@
             if (this.accept(TokenKind.Symbol))
                 return new SvSymbol(token.st).withSourceInfo(token, token);
             if (this.accept(TokenKind.BooleanLit)) 
-                return new SvBool(token.st === "#t").withSourceInfo(token, token);
+                return SvBool.fromBoolean(token.st === "#t").withSourceInfo(token, token);
             if (this.accept(TokenKind.NumberLit))
                 return new SvNumber(eval(token.st)).withSourceInfo(token, token);
             if (this.accept(TokenKind.StringLit))

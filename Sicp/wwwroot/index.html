@@ -5,7 +5,7 @@
     <title>TypeScript HTML App</title>
     <link rel="stylesheet" href="css/app.css" type="text/css" />
     <style>
-        #editor {
+        .editorWindow {
             position: relative;
             height: 400px;
             width: 100%;
@@ -15,59 +15,55 @@
 			background: yellow;
 			position: absolute;
 		}
-		pre {
-			margin: 10px 0;
-			background: lightgray;
+		.samples {
+			display: none;
 		}
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="top">
-            <div id="top-content">
-                <div id="logo">
-                    <h1>
-                        <a href="http://csokavar.hu/projects/minischeme">/mini-scheme</a>
-                    </h1>
-                </div>
-            </div>
-        </div> <!-- top -->
+	<div id="container">
+		<div id="top">
+			<div id="top-content">
+				<div id="logo">
+					<h1>
+						<a href="http://csokavar.hu/projects/minischeme">/mini-scheme</a>
+					</h1>
+				</div>
+			</div>
+		</div> <!-- top -->
 
-        <div id="main">
-            <div id="main-content">
-	            <h2>Mini scheme</h2>
-	            <button id="btnRun">run</button>
-	            <button id="btnBreak">break</button>
-	            <button id="btnStop">stop</button>
-	            <button id="btnStep">step</button>
-	            <button id="btnContinue">continue</button>
-                <div id="editor">(let* ((yin
+		<div id="main">
+			<div id="main-content">
+				<h2>Mini scheme</h2>
+				<div id="editor"></div>
+				<div class="samples">
+					<pre>; yin-yang puzzle
+(let* ((yin
          ((lambda (cc) (display "#\@") cc) (call-with-current-continuation (lambda (c) c))))
        (yang
          ((lambda (cc) (display "#\*") cc) (call-with-current-continuation (lambda (c) c)))))
-    (yin yang))</div>
-                <div id="output"></div>
-                <pre></pre>
-                <pre>(define f 
+	            (yin yang))</pre>
+					<pre>(define f 
     (lambda (return)
         (return 2)
         3
     )
 )
 (call-with-current-continuation f)</pre>
-            
-                <pre id="factorial">(define fact
+					<pre>; factorial 
+(define factorial
     (lambda(x)
         (cond
             ((= x 1) 1)
-            (else (* x(fact(- x 1))))
+            (else (* x(factorial(- x 1))))
         )
     )
 )
-(fact 5)
-(fact 4)
+(factorial 5)
+(factorial 4)
             </pre>
-                <pre>(define for-each 
+					<pre>; array sum
+(define for-each 
     (lambda (dg lst)
         (cond 
             ((null? lst) ())
@@ -83,7 +79,8 @@
 (for-each (lambda (x) (set! y (+ y x))) '(1 2 3))
 (trace 'sum: y)
 </pre>
-	            <pre> (define for-each 
+					<pre>; lazy generator
+ (define for-each 
     (lambda (dg lst)
         (cond 
             ((null? lst) ())
@@ -116,18 +113,9 @@
     (generate-digit)
     (generate-digit))
 </pre>
-	            <pre>(let ((factorial
-      (lambda (n)
-               (cond 
-                    ((= n 1)
-                        1 )
-                    (else 
-                        (* n (factorial (- n 1)))))
-            )))
-      (factorial 5))
-      
-     </pre>
-	            <pre> (define (zero? n) (= n 0) )
+
+					<pre>; odd or even
+ (define (zero? n) (= n 0) )
  
  (letrec ( 
     (even?
@@ -144,7 +132,7 @@
 )
       
      </pre>
-	            <pre>
+					<pre>; call/cc
 					(define alma ())
 (define flag #t)
 (define (f)
@@ -165,33 +153,13 @@
         (alma)
     )
 )
-
-</pre>	  
-	            <pre>(define (length lst)
-    (cond 
-        ((null? lst) 0)
-        (else (+ 1 (length (cdr lst)))))
-)
+</pre>
+					<pre>; n-queens
 (define (add1 n)
     (+ n 1)
 )
 (define (sub1 n)
     (- n 1)
-)
-(define (not a)
-    (cond 
-        (a #f)
-        (else #t))
-)
-(define (and a b c d)
-    (andLst (cons a (cons b (cons c (cons d ())))))
-)
-(define (andLst lst)
-    (cond 
-        ((null? lst) #t)
-        ((not (car lst)) #f)
-        (else (andLst (cdr lst)))
-    )
 )
 ;_____________________________________________________
 ;This function tests to see if the next attempted move (try)
@@ -290,34 +258,34 @@
     (build-all-solutions n)))
     
 (queens 4)</pre>
+				</div>
+			</div> <!-- main-content -->
+		</div> <!-- main -->
 
-            </div> <!-- main-content -->
-        </div> <!-- main -->
+		<div id="footer">
+			<p><a href="http://www.csokavar.hu/">Encsé Művek</a> - 2015</p>
+			<p>Kapcsolat: <a href="mailto:encse@csokavar.hu">encse@csokavar.hu</a></p>
+		</div>
 
+	</div> <!--container -->
 
-        <div id="footer">
-            <p><a href="http://www.csokavar.hu/">Encsé Művek</a> - 2015</p>
-            <p>Kapcsolat: <a href="mailto:encse@csokavar.hu">encse@csokavar.hu</a></p>
-        </div>
+	<script src="lib/requirejs/require.js"></script>
+	<script>
+		require.config({
+			paths: {
+				ace: "js/ace"
+			}
+		});
+	</script>
+	<script src="js/app.js"></script>
+	<script>
+		var sicpEditor = new Editor.SicpEditor(
+			document.getElementById("editor"),
+			Array.prototype.slice.call(document.getElementsByTagName("pre")).map(function (pre) {
+				return pre.innerText;
+			}));
 
-    </div> <!--container -->
-
-    <script src="lib/requirejs/require.js"></script>
-    <script>
-        require.config({
-            paths: {
-                ace: "js/ace"
-            }
-        });
-    </script>
-    <script src="js/app.js"></script>
-    <script>
-		var sicpEditor = new Editor.SicpEditor("editor", "output");
-		document.getElementById("btnBreak").onclick = function() { sicpEditor.break(); };
-		document.getElementById("btnContinue").onclick = function () { sicpEditor.continue(); };
-		document.getElementById("btnRun").onclick = function () { sicpEditor.run(); };
-		document.getElementById("btnStep").onclick = function () { sicpEditor.step(); };
-		document.getElementById("btnStop").onclick =function () { sicpEditor.stop(); };
-    </script>
+	</script>
 </body>
+
 </html>
