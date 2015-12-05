@@ -16,35 +16,44 @@
             require(['ace/ace'], (ace) => {
                 this.Range = ace.require("ace/range").Range;
 
+                var divToolbar = document.createElement('div');
+                divToolbar.classList.add("sicp-editor-toolbar");
+                editorDiv.appendChild(divToolbar);
                 var btnRun: HTMLButtonElement = document.createElement('button');
+                btnRun.classList.add("sicp-editor-button");
                 btnRun.innerText = "run";
                 btnRun.onclick = () => this.run();
-                editorDiv.appendChild(btnRun);
+                divToolbar.appendChild(btnRun);
 
                 var btnBreak: HTMLButtonElement = document.createElement('button');
+                btnBreak.classList.add("sicp-editor-button");
                 btnBreak.innerText = "break";
                 btnBreak.onclick = () => this.break();
-                editorDiv.appendChild(btnBreak);
+                divToolbar.appendChild(btnBreak);
 
                 var btnStop: HTMLButtonElement = document.createElement('button');
+                btnStop.classList.add("sicp-editor-button");
                 btnStop.innerText = "stop";
                 btnStop.onclick = () => this.stop();
-                editorDiv.appendChild(btnStop);
+                divToolbar.appendChild(btnStop);
 
                 var btnStep: HTMLButtonElement = document.createElement('button');
+                btnStep.classList.add("sicp-editor-button");
                 btnStep.innerText = "step";
                 btnStep.onclick = () => this.step();
-                editorDiv.appendChild(btnStep);
+                divToolbar.appendChild(btnStep);
 
-                var btnContinue:HTMLButtonElement = document.createElement('button');
+                var btnContinue: HTMLButtonElement = document.createElement('button');
+                btnContinue.classList.add("sicp-editor-button");
                 btnContinue.innerText = "continue";
                 btnContinue.onclick = () => this.continue();
-                editorDiv.appendChild(btnContinue);
+                divToolbar.appendChild(btnContinue);
 
                 
                 if (samples) {
                     var selectSample: HTMLSelectElement = document.createElement('select');
-                    editorDiv.appendChild(selectSample);
+                    selectSample.classList.add("sicp-editor-select-sample");
+                    divToolbar.appendChild(selectSample);
                     samples.forEach(sample => {
                         const option = document.createElement('option');
                         option.text = sample.split('\n')[0].trim();
