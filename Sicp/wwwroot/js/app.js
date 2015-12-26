@@ -14,50 +14,38 @@ var Editor;
                 var divToolbar = document.createElement('div');
                 divToolbar.classList.add("sicp-editor-toolbar");
                 editorDiv.appendChild(divToolbar);
-                var btnRun = document.createElement('button');
-                btnRun.classList.add("sicp-editor-button");
-                btnRun.innerText = "run";
-                btnRun.onclick = function () { return _this.run(); };
-                divToolbar.appendChild(btnRun);
-                var btnBreak = document.createElement('button');
-                btnBreak.classList.add("sicp-editor-button");
-                btnBreak.innerText = "break";
-                btnBreak.onclick = function () { return _this.break(); };
-                divToolbar.appendChild(btnBreak);
-                var btnStop = document.createElement('button');
-                btnStop.classList.add("sicp-editor-button");
-                btnStop.innerText = "stop";
-                btnStop.onclick = function () { return _this.stop(); };
-                divToolbar.appendChild(btnStop);
-                var btnStep = document.createElement('button');
-                btnStep.classList.add("sicp-editor-button");
-                btnStep.innerText = "step";
-                btnStep.onclick = function () { return _this.step(); };
-                divToolbar.appendChild(btnStep);
-                var btnContinue = document.createElement('button');
-                btnContinue.classList.add("sicp-editor-button");
-                btnContinue.innerText = "continue";
-                btnContinue.onclick = function () { return _this.continue(); };
-                divToolbar.appendChild(btnContinue);
-                if (samples) {
-                    var selectSample = document.createElement('select');
-                    selectSample.classList.add("sicp-editor-select-sample");
-                    divToolbar.appendChild(selectSample);
-                    samples.forEach(function (sample) {
-                        var option = document.createElement('option');
-                        option.text = sample.split('\n')[0].trim();
-                        option.value = sample;
-                        selectSample.appendChild(option);
-                    });
-                    selectSample.onchange = function () { _this.editor.setValue(selectSample.options[selectSample.selectedIndex].value, -1); };
-                }
+                _this.btnRun = document.createElement('button');
+                _this.btnRun.classList.add("sicp-editor-button");
+                _this.btnRun.innerText = "run";
+                _this.btnRun.onclick = function () { return _this.run(); };
+                divToolbar.appendChild(_this.btnRun);
+                _this.btnBreak = document.createElement('button');
+                _this.btnBreak.classList.add("sicp-editor-button");
+                _this.btnBreak.innerText = "break";
+                _this.btnBreak.onclick = function () { return _this.break(); };
+                divToolbar.appendChild(_this.btnBreak);
+                _this.btnStop = document.createElement('button');
+                _this.btnStop.classList.add("sicp-editor-button");
+                _this.btnStop.innerText = "stop";
+                _this.btnStop.onclick = function () { return _this.stop(); };
+                divToolbar.appendChild(_this.btnStop);
+                _this.btnStep = document.createElement('button');
+                _this.btnStep.classList.add("sicp-editor-button");
+                _this.btnStep.innerText = "step";
+                _this.btnStep.onclick = function () { return _this.step(); };
+                divToolbar.appendChild(_this.btnStep);
+                _this.btnContinue = document.createElement('button');
+                _this.btnContinue.classList.add("sicp-editor-button");
+                _this.btnContinue.innerText = "continue";
+                _this.btnContinue.onclick = function () { return _this.continue(); };
+                divToolbar.appendChild(_this.btnContinue);
                 var editorWindow = document.createElement('div');
                 editorWindow.classList.add("editorWindow");
                 editorDiv.appendChild(editorWindow);
                 _this.outputElement = document.createElement('div');
                 editorDiv.appendChild(_this.outputElement);
                 _this.editor = ace.edit(editorWindow);
-                _this.editor.setTheme('ace/theme/clouds_midnight');
+                _this.editor.setTheme('ace/theme/chrome');
                 _this.editor.getSession().setMode('ace/mode/sicp');
                 _this.editor.commands.addCommand({
                     name: 'Run',
@@ -73,6 +61,23 @@ var Editor;
                         _this.step();
                     }
                 });
+                if (samples) {
+                    var selectSample = document.createElement('select');
+                    selectSample.classList.add("sicp-editor-select-sample");
+                    divToolbar.appendChild(selectSample);
+                    samples.forEach(function (sample) {
+                        var option = document.createElement('option');
+                        option.text = sample.split('\n')[0].trim();
+                        option.value = sample;
+                        selectSample.appendChild(option);
+                    });
+                    selectSample.onchange = function () {
+                        _this.stop();
+                        _this.editor.setValue(selectSample.options[selectSample.selectedIndex].value, -1);
+                    };
+                    selectSample.onchange(null);
+                }
+                _this.updateUI();
             });
         }
         SicpEditor.prototype.clearOutput = function () {
@@ -85,18 +90,28 @@ var Editor;
             this.clearMarker();
             if (sv) {
                 this.currentMarker = this.editor.getSession().addMarker(new this.Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
+                this.editor.gotoLine(sv.ilineStart);
             }
         };
         SicpEditor.prototype.clearMarker = function () {
             if (this.currentMarker !== null)
                 this.editor.getSession().removeMarker(this.currentMarker);
         };
+        SicpEditor.prototype.updateUI = function () {
+            this.editor.setReadOnly(this.sv != null);
+            this.btnRun.style.display = this.sv == null ? "inline" : "none";
+            this.btnBreak.style.display = this.isRunning ? "inline" : "none";
+            this.btnContinue.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
+            this.btnStop.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
+            this.btnStep.style.display = !this.isRunning ? "inline" : "none";
+        };
         SicpEditor.prototype.step = function () {
+            this.clearMarker();
             try {
                 if (!this.sv)
                     this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
                 else
-                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 100 : 1);
+                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 1000 : 1);
             }
             catch (ex) {
                 this.log(ex);
@@ -104,10 +119,12 @@ var Editor;
             }
             if (this.sv == null)
                 this.isRunning = false;
-            if (!this.isRunning)
+            if (!this.isRunning) {
                 this.setMarker(this.sv);
+            }
             else
-                this.currentTimeout = window.setTimeout(this.step.bind(this), 0);
+                this.currentTimeout = window.setTimeout(this.step.bind(this), 1);
+            this.updateUI();
         };
         SicpEditor.prototype.stop = function () {
             this.sv = null;
@@ -115,6 +132,7 @@ var Editor;
             this.clearMarker();
             this.clearOutput();
             clearTimeout(this.currentTimeout);
+            this.updateUI();
         };
         SicpEditor.prototype.run = function () {
             this.stop();
@@ -291,9 +309,15 @@ var Sicp;
     (function (Evaluator) {
         var BaseEvaluator = (function () {
             function BaseEvaluator() {
+                this.stepCount = 1;
+                this.step = 0;
             }
             BaseEvaluator.prototype.setEvaluators = function (evaluators) {
                 this.evaluators = evaluators;
+            };
+            BaseEvaluator.prototype.setStepCount = function (stepCount) {
+                this.stepCount = stepCount;
+                this.step = 0;
             };
             BaseEvaluator.prototype.matches = function (node) {
                 return true;
@@ -301,8 +325,13 @@ var Sicp;
             BaseEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var _this = this;
                 for (var i = 0; i < this.evaluators.length; i++) {
-                    if (this.evaluators[i].matches(sv))
-                        return new Sicp.Lang.SvThunk(function () { return _this.evaluators[i].evaluate(sv, env, cont); }).withSourceInfo(sv, sv);
+                    if (this.evaluators[i].matches(sv)) {
+                        this.step++;
+                        if (this.step % this.stepCount == 0)
+                            return new Sicp.Lang.SvThunk(function () { return _this.evaluators[i].evaluate(sv, env, cont); }).withSourceInfo(sv, sv);
+                        else
+                            return this.evaluators[i].evaluate(sv, env, cont);
+                    }
                 }
                 throw 'cannot evaluate ' + sv.toString();
             };
@@ -693,32 +722,31 @@ var Sicp;
                     log(args.toString());
                     return Lang.SvCons.Nil;
                 })));
-                var evaluator = new Sicp.Evaluator.BaseEvaluator();
-                evaluator.setEvaluators([
-                    new Sicp.Evaluator.ThunkEvaluator(evaluator),
+                this.evaluator = new Sicp.Evaluator.BaseEvaluator();
+                this.evaluator.setEvaluators([
+                    new Sicp.Evaluator.ThunkEvaluator(this.evaluator),
                     new Sicp.Evaluator.SelfEvaluator(),
                     new Sicp.Evaluator.VariableEvaluator(),
-                    new Sicp.Evaluator.LetEvaluator(evaluator),
-                    new Sicp.Evaluator.QuoteEvaluator(evaluator),
-                    new Sicp.Evaluator.CondEvaluator(evaluator),
-                    new Sicp.Evaluator.DefineEvaluator(evaluator),
-                    new Sicp.Evaluator.AssignmentEvaluator(evaluator),
-                    new Sicp.Evaluator.IfEvaluator(evaluator),
-                    new Sicp.Evaluator.BeginEvaluator(evaluator),
-                    new Sicp.Evaluator.LambdaEvaluator(evaluator),
-                    new Sicp.Evaluator.CallCCEvaluator(evaluator),
-                    new Sicp.Evaluator.ApplicationEvaluator(evaluator)
+                    new Sicp.Evaluator.LetEvaluator(this.evaluator),
+                    new Sicp.Evaluator.QuoteEvaluator(this.evaluator),
+                    new Sicp.Evaluator.CondEvaluator(this.evaluator),
+                    new Sicp.Evaluator.DefineEvaluator(this.evaluator),
+                    new Sicp.Evaluator.AssignmentEvaluator(this.evaluator),
+                    new Sicp.Evaluator.IfEvaluator(this.evaluator),
+                    new Sicp.Evaluator.BeginEvaluator(this.evaluator),
+                    new Sicp.Evaluator.LambdaEvaluator(this.evaluator),
+                    new Sicp.Evaluator.CallCCEvaluator(this.evaluator),
+                    new Sicp.Evaluator.ApplicationEvaluator(this.evaluator)
                 ]);
-                return evaluator.evaluateList(exprs, new Lang.Env(env), function (sv) {
-                    log(sv.toString());
+                return this.evaluator.evaluateList(exprs, new Lang.Env(env), function (sv) {
+                    //log(sv.toString());
                     return sv;
                 });
             };
             Interpreter.prototype.step = function (sv, stepCount) {
-                while (Lang.SvThunk.matches(sv) && stepCount > 0) {
+                this.evaluator.setStepCount(stepCount);
+                if (Lang.SvThunk.matches(sv))
                     sv = Lang.SvThunk.val(sv)();
-                    stepCount--;
-                }
                 return Lang.SvThunk.matches(sv) ? sv : null;
             };
             return Interpreter;

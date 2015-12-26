@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>TypeScript HTML App</title>
+    <title>Mini Scheme</title>
     <link rel="stylesheet" href="css/app.css" type="text/css" />
     <style>
         .editorWindow {
@@ -48,19 +48,6 @@
 				<h2>Mini scheme</h2>
 				<div id="editor"></div>
 				<div class="samples">
-					<pre>; yin-yang puzzle
-(let* ((yin
-         ((lambda (cc) (display "#\@") cc) (call-with-current-continuation (lambda (c) c))))
-       (yang
-         ((lambda (cc) (display "#\*") cc) (call-with-current-continuation (lambda (c) c)))))
-	            (yin yang))</pre>
-					<pre>(define f 
-    (lambda (return)
-        (return 2)
-        3
-    )
-)
-(call-with-current-continuation f)</pre>
 					<pre>; factorial 
 (define factorial
     (lambda(x)
@@ -70,27 +57,100 @@
         )
     )
 )
-(factorial 5)
-(factorial 4)
-            </pre>
-					<pre>; array sum
-(define for-each 
-    (lambda (dg lst)
-        (cond 
-            ((null? lst) ())
-            (else 
-                (dg (car lst))
-                (for-each dg (cdr lst))
-            )
-        )
-        
-    )
+(display (factorial 5))
+</pre>
+
+					<pre>; odd or even
+ (define (zero? n) (= n 0) )
+ 
+ (letrec ( 
+    (even?
+        (lambda (n)
+            (if (zero? n)
+                #t
+                (odd? (- n 1)))))
+    (odd?
+        (lambda (n)
+            (if (zero? n)
+                 #f
+                (even? (- n 1))))))
+    (display (even? 88))
 )
-(define y 0)
-(for-each (lambda (x) (set! y (+ y x))) '(1 2 3))
-(trace 'sum: y)
+</pre>
+					<pre>; n-queens
+(define (add1 n)
+    (+ n 1)
+)
+(define (sub1 n)
+    (- n 1)
+)
+
+(define legal?
+  (lambda (try legal-pl)
+    (letrec
+        ((good?
+          (lambda (new-pl up down)
+            (cond
+              ((null? new-pl) #t)
+              (else (let ((next-pos (car new-pl)))
+                      (and
+                       (not (= next-pos try))
+                       (not (= next-pos up))
+                       (not (= next-pos down))
+                       (good? (cdr new-pl)
+                              (add1 up)
+                              (sub1 down)))))))))
+      (good? legal-pl (add1 try) (sub1 try)))))
+
+(define solution?
+    (lambda (legal-pl boardsize)
+      (= (length legal-pl) boardsize)))
+
+(define build-solution
+  (lambda (legal-pl boardsize)
+    (cond
+      ((solution? legal-pl boardsize) legal-pl)
+      (else (forward boardsize legal-pl boardsize)))))
+
+(define forward
+  (lambda (try legal-pl boardsize)
+    (cond
+      ((zero? try) (backtrack legal-pl boardsize))
+      ((legal? try legal-pl) (build-solution (cons try legal-pl) boardsize))
+      (else (forward (sub1 try) legal-pl boardsize)))))
+
+(define backtrack
+  (lambda (legal-pl boardsize)
+    (cond
+      ((null? legal-pl) '())
+      (else (forward (sub1 (car legal-pl)) (cdr legal-pl) boardsize)))))
+
+(define build-all-solutions
+  (lambda (boardsize)
+    (letrec
+        ((loop (lambda (sol)
+                 (cond
+                   ((null? sol) '())
+                   (else (begin 
+                        (display sol)
+                        (cons sol (loop (backtrack sol boardsize)))))))))
+      (loop (build-solution '() boardsize)))))
+
+(define queens
+  (lambda (n)
+    (build-all-solutions n)))
+    
+(queens 8)</pre>
+					<pre>; emulate return with call/cc 
+; https://en.wikipedia.org/wiki/Call-with-current-continuation
+(define (f return)
+	(return 2)
+	3)
+(display (f (lambda (x) x))) ; displays 3
+(display (call-with-current-continuation f)) ; displays 2
 </pre>
 					<pre>; lazy generator
+; https://en.wikipedia.org/wiki/Call-with-current-continuation
  (define for-each 
     (lambda (dg lst)
         (cond 
@@ -118,157 +178,19 @@
   
 (define generate-digit
   (generate-one-element-at-a-time '(0 1 2)))
-(trace 
+(display 
     (generate-digit)
     (generate-digit)
     (generate-digit)
     (generate-digit))
-</pre>
-
-					<pre>; odd or even
- (define (zero? n) (= n 0) )
- 
- (letrec ( 
-    (even?
-        (lambda (n)
-            (if (zero? n)
-                #t
-                (odd? (- n 1)))))
-    (odd?
-        (lambda (n)
-            (if (zero? n)
-                 #f
-                (even? (- n 1))))))
-    (even? 88)
-)
-      
-     </pre>
-					<pre>; call/cc
-					(define alma ())
-(define flag #t)
-(define (f)
-    (display 1 "alma" "fa")
-    (call-with-current-continuation
-        (lambda (x) 
-            (set! alma x)
-        )
-    )
-    (display 2)
-    (display 3)
-    "vege"
-)
-(f)
-(cond 
-    (flag
-        (set! flag #f)
-        (alma)
-    )
-)
-</pre>
-					<pre>; n-queens
-(define (add1 n)
-    (+ n 1)
-)
-(define (sub1 n)
-    (- n 1)
-)
-;_____________________________________________________
-;This function tests to see if the next attempted move (try)
-;is legal, given the list that has been constructed thus far
-;(if any) - legal-pl (LEGAL PLacement list)
-;N.B. - this function is an EXACT copy of the one from
-;Springer and Friedman
-(define legal?
-  (lambda (try legal-pl)
-    (letrec
-        ((good?
-          (lambda (new-pl up down)
-            (cond
-              ((null? new-pl) #t)
-              (else (let ((next-pos (car new-pl)))
-                      (and
-                       (not (= next-pos try))
-                       (not (= next-pos up))
-                       (not (= next-pos down))
-                       (good? (cdr new-pl)
-                              (add1 up)
-                              (sub1 down)))))))))
-      (good? legal-pl (add1 try) (sub1 try)))))
-;_____________________________________________________
-;This function tests the length of the solution to
-;see if we need to continue "cons"ing on more terms
-;or not given to the specified board size.
-;
-;I modified this function so that it could test the
-;validity of any solution for a given boardsize.
-(define solution?
-    (lambda (legal-pl boardsize)
-      (= (length legal-pl) boardsize)))
-;_____________________________________________________
-;I had to modify this function so that it was passed
-;the boardsize in its call, but other than that (and
-;simply replacing "fresh-start" with boardsize), just
-;about no changes were made.  This function simply
-;generates a solution.
-(define build-solution
-  (lambda (legal-pl boardsize)
-    (cond
-      ((solution? legal-pl boardsize) legal-pl)
-      (else (forward boardsize legal-pl boardsize)))))
-;_____________________________________________________
-;This function dictates how the next solution will be
-;chosen, as it is only called when the last solution
-;was proven to be legal, and we are ready to try a new
-;placement.
-;
-;I had to modify this function to include the boardsize
-;as well, since it invokes "build-solution".
-(define forward
-  (lambda (try legal-pl boardsize)
-    (cond
-      ((zero? try) (backtrack legal-pl boardsize))
-      ((legal? try legal-pl) (build-solution (cons try legal-pl) boardsize))
-      (else (forward (sub1 try) legal-pl boardsize)))))
-;_____________________________________________________
-;This function is used when the last move is found to
-;be unhelpful (although valid) - instead it tries another
-;one until it finds a new solution.
-;
-;Again, I had to modify this function to include boardsize
-;since it calls "forward", which has boardsize as a
-;parameter due to the "build-solution" call within it
-(define backtrack
-  (lambda (legal-pl boardsize)
-    (cond
-      ((null? legal-pl) '())
-      (else (forward (sub1 (car legal-pl)) (cdr legal-pl) boardsize)))))
-;_____________________________________________________
-;This is pretty much the same function as the one in the book
-;with just my minor "boardsize" tweaks, since build-solution
-;is called.
-(define build-all-solutions
-  (lambda (boardsize)
-    (letrec
-        ((loop (lambda (sol)
-                 (cond
-                   ((null? sol) '())
-                   (else (begin 
-                        (display sol)
-                        (cons sol (loop (backtrack sol boardsize)))))))))
-      (loop (build-solution '() boardsize)))))
-;_____________________________________________________
-;This function I made up entirely myself, and I only
-;made it really to satisfy the syntactical limitations
-;of the laboratory instructions.  This makes it so that
-;the input of "(queens 4)" will return a list of the
-;two possible configurations that are valid solutions,
-;even though my modifiend functions would return the same
-;value by simply inputting "(build-all-solutions 4)".
-(define queens
-  (lambda (n)
-    (build-all-solutions n)))
-    
-(queens 4)</pre>
+</pre><pre>; yin-yang puzzle
+; https://en.wikipedia.org/wiki/Call-with-current-continuation
+(let* ((yin
+         ((lambda (cc) (display "#\@") cc) (call-with-current-continuation (lambda (c) c))))
+       (yang
+         ((lambda (cc) (display "#\*") cc) (call-with-current-continuation (lambda (c) c)))))
+	            (yin yang))</pre>
+					
 				</div>
 			</div> <!-- main-content -->
 		</div> <!-- main -->

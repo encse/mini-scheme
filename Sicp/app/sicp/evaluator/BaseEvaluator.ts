@@ -1,11 +1,17 @@
 module Sicp.Evaluator {
    
     export class BaseEvaluator implements Sicp.Lang.IEvaluator {
-
+        private stepCount: number = 1;
+        private step:number = 0 ;
         private evaluators: Sicp.Lang.IEvaluator[];
 
         public setEvaluators(evaluators: Sicp.Lang.IEvaluator[]) {
             this.evaluators = evaluators;
+        }
+
+        public setStepCount(stepCount: number) {
+            this.stepCount = stepCount;
+            this.step = 0;
         }
 
         public matches(node: Lang.Sv): boolean {
@@ -15,8 +21,14 @@ module Sicp.Evaluator {
         public evaluate(sv: Lang.Sv, env: Sicp.Lang.Env, cont: Sicp.Lang.Cont): Lang.Sv {
 
             for (var i = 0; i < this.evaluators.length;i++) {
-                if (this.evaluators[i].matches(sv))
-                    return new Lang.SvThunk(() => this.evaluators[i].evaluate(sv, env, cont)).withSourceInfo(sv,sv);
+                if (this.evaluators[i].matches(sv)) {
+                    this.step++;
+                    if (this.step % this.stepCount == 0)
+                        return new Lang.SvThunk(() => this.evaluators[i].evaluate(sv, env, cont)).withSourceInfo(sv, sv);
+                    else
+                        return this.evaluators[i].evaluate(sv, env, cont);
+
+                }
             }
             throw 'cannot evaluate ' + sv.toString();
         }

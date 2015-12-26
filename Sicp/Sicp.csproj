@@ -28,6 +28,7 @@
     <Content Include="wwwroot\js\ace\mode-sicp.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="wwwroot\js\ace\theme-chrome.js" />
     <Content Include="wwwroot\js\ace\theme-clouds_midnight.js" />
     <Content Include="wwwroot\js\ace\theme-github.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

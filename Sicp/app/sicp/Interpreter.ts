@@ -1,5 +1,8 @@
 module Sicp.Lang {
+
     export class Interpreter {
+
+        private evaluator: Evaluator.BaseEvaluator;
 
         public evaluateString(st: string, log: (st: string) => void) {
             let parser = new Lang.Parser();
@@ -27,34 +30,33 @@ module Sicp.Lang {
                 return SvCons.Nil;
             })));
 
-            var evaluator = new Evaluator.BaseEvaluator();
-            evaluator.setEvaluators([
-                new Evaluator.ThunkEvaluator(evaluator),
+            this.evaluator = new Evaluator.BaseEvaluator();
+            this.evaluator.setEvaluators([
+                new Evaluator.ThunkEvaluator(this.evaluator),
                 new Evaluator.SelfEvaluator(),
                 new Evaluator.VariableEvaluator(),
-                new Evaluator.LetEvaluator(evaluator),
-                new Evaluator.QuoteEvaluator(evaluator),
-                new Evaluator.CondEvaluator(evaluator),
-                new Evaluator.DefineEvaluator(evaluator),
-                new Evaluator.AssignmentEvaluator(evaluator),
-                new Evaluator.IfEvaluator(evaluator),
-                new Evaluator.BeginEvaluator(evaluator),
-                new Evaluator.LambdaEvaluator(evaluator),
-                new Evaluator.CallCCEvaluator(evaluator),
-                new Evaluator.ApplicationEvaluator(evaluator)
+                new Evaluator.LetEvaluator(this.evaluator),
+                new Evaluator.QuoteEvaluator(this.evaluator),
+                new Evaluator.CondEvaluator(this.evaluator),
+                new Evaluator.DefineEvaluator(this.evaluator),
+                new Evaluator.AssignmentEvaluator(this.evaluator),
+                new Evaluator.IfEvaluator(this.evaluator),
+                new Evaluator.BeginEvaluator(this.evaluator),
+                new Evaluator.LambdaEvaluator(this.evaluator),
+                new Evaluator.CallCCEvaluator(this.evaluator),
+                new Evaluator.ApplicationEvaluator(this.evaluator)
             ]);
 
-            return evaluator.evaluateList(exprs, new Env(env), sv => {
-                log(sv.toString());
+            return this.evaluator.evaluateList(exprs, new Env(env), sv => {
+                //log(sv.toString());
                 return sv;
             });
         }
 
-        public step(sv: Sv, stepCount:number): Sv {
-            while (Lang.SvThunk.matches(sv) && stepCount > 0) {
+        public step(sv: Sv, stepCount: number): Sv {
+            this.evaluator.setStepCount(stepCount);
+            if (Lang.SvThunk.matches(sv))
                 sv = Lang.SvThunk.val(sv)();
-                stepCount--;
-            }
 
             return Lang.SvThunk.matches(sv) ? sv : null;
         }

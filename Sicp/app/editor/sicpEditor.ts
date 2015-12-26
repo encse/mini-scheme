@@ -5,6 +5,11 @@
         outputElement: HTMLElement;
         currentMarker = null;
         currentTimeout = null;
+        btnRun: HTMLButtonElement;
+        btnBreak: HTMLButtonElement;
+        btnStop: HTMLButtonElement;
+        btnStep: HTMLButtonElement;
+        btnContinue: HTMLButtonElement;
 
         isRunning:boolean = false;
         sv: Sicp.Lang.Sv;
@@ -19,51 +24,37 @@
                 var divToolbar = document.createElement('div');
                 divToolbar.classList.add("sicp-editor-toolbar");
                 editorDiv.appendChild(divToolbar);
-                var btnRun: HTMLButtonElement = document.createElement('button');
-                btnRun.classList.add("sicp-editor-button");
-                btnRun.innerText = "run";
-                btnRun.onclick = () => this.run();
-                divToolbar.appendChild(btnRun);
+                this.btnRun = document.createElement('button');
+                this.btnRun.classList.add("sicp-editor-button");
+                this.btnRun.innerText = "run";
+                this.btnRun.onclick = () => this.run();
+                divToolbar.appendChild(this.btnRun);
 
-                var btnBreak: HTMLButtonElement = document.createElement('button');
-                btnBreak.classList.add("sicp-editor-button");
-                btnBreak.innerText = "break";
-                btnBreak.onclick = () => this.break();
-                divToolbar.appendChild(btnBreak);
+                this.btnBreak = document.createElement('button');
+                this.btnBreak.classList.add("sicp-editor-button");
+                this.btnBreak.innerText = "break";
+                this.btnBreak.onclick = () => this.break();
+                divToolbar.appendChild(this.btnBreak);
 
-                var btnStop: HTMLButtonElement = document.createElement('button');
-                btnStop.classList.add("sicp-editor-button");
-                btnStop.innerText = "stop";
-                btnStop.onclick = () => this.stop();
-                divToolbar.appendChild(btnStop);
+                this.btnStop = document.createElement('button');
+                this.btnStop.classList.add("sicp-editor-button");
+                this.btnStop.innerText = "stop";
+                this.btnStop.onclick = () => this.stop();
+                divToolbar.appendChild(this.btnStop);
 
-                var btnStep: HTMLButtonElement = document.createElement('button');
-                btnStep.classList.add("sicp-editor-button");
-                btnStep.innerText = "step";
-                btnStep.onclick = () => this.step();
-                divToolbar.appendChild(btnStep);
+                this.btnStep = document.createElement('button');
+                this.btnStep.classList.add("sicp-editor-button");
+                this.btnStep.innerText = "step";
+                this.btnStep.onclick = () => this.step();
+                divToolbar.appendChild(this.btnStep);
 
-                var btnContinue: HTMLButtonElement = document.createElement('button');
-                btnContinue.classList.add("sicp-editor-button");
-                btnContinue.innerText = "continue";
-                btnContinue.onclick = () => this.continue();
-                divToolbar.appendChild(btnContinue);
+                this.btnContinue = document.createElement('button');
+                this.btnContinue.classList.add("sicp-editor-button");
+                this.btnContinue.innerText = "continue";
+                this.btnContinue.onclick = () => this.continue();
+                divToolbar.appendChild(this.btnContinue);
 
-                
-                if (samples) {
-                    var selectSample: HTMLSelectElement = document.createElement('select');
-                    selectSample.classList.add("sicp-editor-select-sample");
-                    divToolbar.appendChild(selectSample);
-                    samples.forEach(sample => {
-                        const option = document.createElement('option');
-                        option.text = sample.split('\n')[0].trim();
-                        option.value = sample;
-                        selectSample.appendChild(option);
-
-                    });
-                    selectSample.onchange = () => { this.editor.setValue(selectSample.options[selectSample.selectedIndex].value, -1); };
-                }
-
+             
                 var editorWindow = document.createElement('div');
                 editorWindow.classList.add("editorWindow");
                 editorDiv.appendChild(editorWindow);
@@ -72,7 +63,7 @@
                 editorDiv.appendChild(this.outputElement);
 
                 this.editor = ace.edit(editorWindow);
-                this.editor.setTheme('ace/theme/clouds_midnight');
+                this.editor.setTheme('ace/theme/chrome');
                 this.editor.getSession().setMode('ace/mode/sicp');
                 this.editor.commands.addCommand({
                     name: 'Run',
@@ -88,6 +79,28 @@
                         this.step();
                     }
                 });
+
+
+                if (samples) {
+                    var selectSample: HTMLSelectElement = document.createElement('select');
+                    selectSample.classList.add("sicp-editor-select-sample");
+                    divToolbar.appendChild(selectSample);
+                    samples.forEach(sample => {
+                        const option = document.createElement('option');
+                        option.text = sample.split('\n')[0].trim();
+                        option.value = sample;
+                        selectSample.appendChild(option);
+
+                    });
+                    selectSample.onchange = () => {
+                         this.stop();
+                         this.editor.setValue(selectSample.options[selectSample.selectedIndex].value, -1);
+                    };
+                    selectSample.onchange(null);
+                }
+
+
+                this.updateUI();
             });
         }
 
@@ -104,6 +117,7 @@
             if (sv) {
                 this.currentMarker = this.editor.getSession().addMarker(
                     new this.Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
+                this.editor.gotoLine(sv.ilineStart);
             }
         }
         clearMarker() {
@@ -111,15 +125,23 @@
                 this.editor.getSession().removeMarker(this.currentMarker);
         }
 
+        updateUI() {
+            this.editor.setReadOnly(this.sv != null);
+            this.btnRun.style.display = this.sv == null ? "inline" : "none";
+            this.btnBreak.style.display = this.isRunning ? "inline" : "none";
+            this.btnContinue.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
+            this.btnStop.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
+            this.btnStep.style.display = !this.isRunning ? "inline" : "none";
+        }
+
         step() {
             
+            this.clearMarker();
             try {
                 if (!this.sv)
                     this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
                 else
-                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 100 : 1);
-
-                
+                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 1000 : 1);
                           
             } catch (ex) {
                 this.log(ex);
@@ -129,10 +151,12 @@
             if (this.sv == null)
                 this.isRunning = false;
 
-            if (!this.isRunning)
+            if (!this.isRunning) {
                 this.setMarker(this.sv);
-            else
-                this.currentTimeout = window.setTimeout(this.step.bind(this), 0);
+            } else
+                this.currentTimeout = window.setTimeout(this.step.bind(this), 1);
+
+            this.updateUI();
         }
 
         stop() {
@@ -141,6 +165,7 @@
             this.clearMarker();
             this.clearOutput();
             clearTimeout(this.currentTimeout);
+            this.updateUI();
         }
 
         run() {
