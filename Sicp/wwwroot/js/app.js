@@ -16,27 +16,27 @@ var Editor;
                 editorDiv.appendChild(divToolbar);
                 _this.btnRun = document.createElement('button');
                 _this.btnRun.classList.add("sicp-editor-button");
-                _this.btnRun.innerText = "run";
+                _this.btnRun.innerHTML = "run";
                 _this.btnRun.onclick = function () { return _this.run(); };
                 divToolbar.appendChild(_this.btnRun);
                 _this.btnBreak = document.createElement('button');
                 _this.btnBreak.classList.add("sicp-editor-button");
-                _this.btnBreak.innerText = "break";
+                _this.btnBreak.innerHTML = "break";
                 _this.btnBreak.onclick = function () { return _this.break(); };
                 divToolbar.appendChild(_this.btnBreak);
                 _this.btnStop = document.createElement('button');
                 _this.btnStop.classList.add("sicp-editor-button");
-                _this.btnStop.innerText = "stop";
+                _this.btnStop.innerHTML = "stop";
                 _this.btnStop.onclick = function () { return _this.stop(); };
                 divToolbar.appendChild(_this.btnStop);
                 _this.btnStep = document.createElement('button');
                 _this.btnStep.classList.add("sicp-editor-button");
-                _this.btnStep.innerText = "step";
+                _this.btnStep.innerHTML = "step";
                 _this.btnStep.onclick = function () { return _this.step(); };
                 divToolbar.appendChild(_this.btnStep);
                 _this.btnContinue = document.createElement('button');
                 _this.btnContinue.classList.add("sicp-editor-button");
-                _this.btnContinue.innerText = "continue";
+                _this.btnContinue.innerHTML = "continue";
                 _this.btnContinue.onclick = function () { return _this.continue(); };
                 divToolbar.appendChild(_this.btnContinue);
                 var editorWindow = document.createElement('div');
@@ -81,10 +81,10 @@ var Editor;
             });
         }
         SicpEditor.prototype.clearOutput = function () {
-            this.outputElement.innerText = "";
+            this.outputElement.innerHTML = "";
         };
         SicpEditor.prototype.log = function (st) {
-            this.outputElement.innerText = this.outputElement.innerText === "" ? st : this.outputElement.innerText + "\n" + st;
+            this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + "\n" + st;
         };
         SicpEditor.prototype.setMarker = function (sv) {
             this.clearMarker();
@@ -111,7 +111,7 @@ var Editor;
                 if (!this.sv)
                     this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
                 else
-                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 1000 : 1);
+                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 100 : 1);
             }
             catch (ex) {
                 this.log(ex);

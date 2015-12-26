@@ -140,7 +140,7 @@
   (lambda (n)
     (build-all-solutions n)))
     
-(queens 8)</pre>
+(queens 4)</pre>
 					<pre>; emulate return with call/cc 
 ; https://en.wikipedia.org/wiki/Call-with-current-continuation
 (define (f return)
@@ -215,7 +215,7 @@
 		var sicpEditor = new Editor.SicpEditor(
 			document.getElementById("editor"),
 			Array.prototype.slice.call(document.getElementsByTagName("pre")).map(function (pre) {
-				return pre.innerText;
+				return pre.innerHTML;
 			}));
 
 	</script>

@@ -26,31 +26,31 @@
                 editorDiv.appendChild(divToolbar);
                 this.btnRun = document.createElement('button');
                 this.btnRun.classList.add("sicp-editor-button");
-                this.btnRun.innerText = "run";
+                this.btnRun.innerHTML = "run";
                 this.btnRun.onclick = () => this.run();
                 divToolbar.appendChild(this.btnRun);
 
                 this.btnBreak = document.createElement('button');
                 this.btnBreak.classList.add("sicp-editor-button");
-                this.btnBreak.innerText = "break";
+                this.btnBreak.innerHTML = "break";
                 this.btnBreak.onclick = () => this.break();
                 divToolbar.appendChild(this.btnBreak);
 
                 this.btnStop = document.createElement('button');
                 this.btnStop.classList.add("sicp-editor-button");
-                this.btnStop.innerText = "stop";
+                this.btnStop.innerHTML = "stop";
                 this.btnStop.onclick = () => this.stop();
                 divToolbar.appendChild(this.btnStop);
 
                 this.btnStep = document.createElement('button');
                 this.btnStep.classList.add("sicp-editor-button");
-                this.btnStep.innerText = "step";
+                this.btnStep.innerHTML = "step";
                 this.btnStep.onclick = () => this.step();
                 divToolbar.appendChild(this.btnStep);
 
                 this.btnContinue = document.createElement('button');
                 this.btnContinue.classList.add("sicp-editor-button");
-                this.btnContinue.innerText = "continue";
+                this.btnContinue.innerHTML = "continue";
                 this.btnContinue.onclick = () => this.continue();
                 divToolbar.appendChild(this.btnContinue);
 
@@ -105,11 +105,11 @@
         }
 
         clearOutput() {
-            this.outputElement.innerText = "";
+            this.outputElement.innerHTML = "";
         }
 
         log(st: string) {
-            this.outputElement.innerText = this.outputElement.innerText === "" ? st : this.outputElement.innerText + "\n" + st;
+            this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + "\n" + st;
         }
 
         setMarker(sv: Sicp.Lang.Sv) {
@@ -141,7 +141,7 @@
                 if (!this.sv)
                     this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
                 else
-                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 1000 : 1);
+                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 100 : 1);
                           
             } catch (ex) {
                 this.log(ex);
