@@ -84,6 +84,7 @@
     <Content Include="wwwroot\samples\lazy-generator.ms" />
     <Content Include="wwwroot\samples\yin-yang.ms" />
     <Content Include="wwwroot\samples\hanoi.ms" />
+    <Content Include="wwwroot\js\ace\LICENSE" />
   </ItemGroup>
   <ItemGroup />
   <PropertyGroup>
