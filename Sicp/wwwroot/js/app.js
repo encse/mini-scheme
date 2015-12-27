@@ -809,7 +809,7 @@ var Sicp;
                 this.regexString = /^"([^\\\"]+|\\.)*"/;
                 this.regexWhiteSpace = /^\s*/;
                 this.regexBoolean = /^#t|^#f/;
-                this.regexComment = /^;[^\$\r\n]*/;
+                this.regexComment = /^;.*/;
                 this.itoken = 0;
             }
             Parser.prototype.parse = function (st) {

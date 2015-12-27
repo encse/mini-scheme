@@ -104,10 +104,6 @@ body {
 	padding: 5px;
 }
 
-.samples {
-	display: none;
-}
-
 #editor-bottom {
 	display: flex;
 	flex-direction: row;

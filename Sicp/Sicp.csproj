@@ -76,6 +76,13 @@
     </None>
     <Content Include="wwwroot\lib\requirejs\package.json" />
     <Content Include="wwwroot\lib\requirejs\README.md" />
+    <Content Include="wwwroot\samples\factorial.ms" />
+    <Content Include="wwwroot\samples\odd-or-even.ms" />
+    <Content Include="wwwroot\samples\counting-change.ms" />
+    <Content Include="wwwroot\samples\n-queens.ms" />
+    <Content Include="wwwroot\samples\return-with-callcc.ms" />
+    <Content Include="wwwroot\samples\lazy-generator.ms" />
+    <Content Include="wwwroot\samples\yin-yang.ms" />
   </ItemGroup>
   <ItemGroup />
   <PropertyGroup>

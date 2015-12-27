@@ -6,7 +6,7 @@
         private regexString = /^"([^\\\"]+|\\.)*"/;
         private regexWhiteSpace = /^\s*/;
         private regexBoolean = /^#t|^#f/;
-        private regexComment = /^;[^\$\r\n]*/;
+        private regexComment = /^;.*/;
 
         private tokens: Token[];
         private itoken = 0;

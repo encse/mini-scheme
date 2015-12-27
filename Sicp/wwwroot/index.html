@@ -23,148 +23,11 @@
 			<div id="variables-content" class="sicp-box-content"></div>
 		</div>
 	</div>
-	<div class="samples">
-		<pre>; factorial 
-(define factorial
-    (lambda(x)
-        (cond
-            ((= x 1) 1)
-            (else (* x(factorial(- x 1))))
-        )
-    )
-)
-(display (factorial 5))
-</pre>
-
-		<pre>; odd or even
- (define (zero? n) (= n 0) )
- 
- (letrec ( 
-    (even?
-        (lambda (n)
-            (if (zero? n)
-                #t
-                (odd? (- n 1)))))
-    (odd?
-        (lambda (n)
-            (if (zero? n)
-                 #f
-                (even? (- n 1))))))
-    (display (even? 88))
-)
-</pre>
-		<pre>; n-queens
-(define (add1 n)
-    (+ n 1)
-)
-(define (sub1 n)
-    (- n 1)
-)
-(define legal?
-  (lambda (try legal-pl)
-    (letrec
-        ((good?
-          (lambda (new-pl up down)
-            (cond
-              ((null? new-pl) #t)
-              (else (let ((next-pos (car new-pl)))
-                      (and
-                       (not (= next-pos try))
-                       (not (= next-pos up))
-                       (not (= next-pos down))
-                       (good? (cdr new-pl)
-                              (add1 up)
-                              (sub1 down)))))))))
-      (good? legal-pl (add1 try) (sub1 try)))))
-(define solution?
-    (lambda (legal-pl boardsize)
-      (= (length legal-pl) boardsize)))
-(define build-solution
-  (lambda (legal-pl boardsize)
-    (cond
-      ((solution? legal-pl boardsize) legal-pl)
-      (else (forward boardsize legal-pl boardsize)))))
-(define forward
-  (lambda (try legal-pl boardsize)
-    (cond
-      ((zero? try) (backtrack legal-pl boardsize))
-      ((legal? try legal-pl) (build-solution (cons try legal-pl) boardsize))
-      (else (forward (sub1 try) legal-pl boardsize)))))
-(define backtrack
-  (lambda (legal-pl boardsize)
-    (cond
-      ((null? legal-pl) '())
-      (else (forward (sub1 (car legal-pl)) (cdr legal-pl) boardsize)))))
-(define build-all-solutions
-  (lambda (boardsize)
-    (letrec
-        ((loop (lambda (sol)
-                 (cond
-                   ((null? sol) '())
-                   (else (begin 
-                        (display sol)
-                        (cons sol (loop (backtrack sol boardsize)))))))))
-      (loop (build-solution '() boardsize)))))
-(define queens
-  (lambda (n)
-    (build-all-solutions n)))
-    
-(queens 8)</pre>
-		<pre>; emulate return with call/cc 
-; https://en.wikipedia.org/wiki/Call-with-current-continuation
-(define (f return)
-	(return 2)
-	3)
-(display (f (lambda (x) x))) ; displays 3
-(display (call-with-current-continuation f)) ; displays 2
-</pre>
-		<pre>; lazy generator
-; https://en.wikipedia.org/wiki/Call-with-current-continuation
- (define for-each 
-    (lambda (dg lst)
-        (cond 
-            ((null? lst) ())
-            (else 
-                (dg (car lst))
-                (for-each dg (cdr lst))))
-    ))
-(define generate-one-element-at-a-time (lambda (lst)
-  (define control-state (lambda (return)
-    (for-each 
-        (lambda (element)
-            (set! return (call-with-current-continuation
-                (lambda (resume-here)
-                   (set! control-state resume-here)
-                   (return element)))))
-        lst)
-    (return 'you-fell-off-the-end)))
-  
-  (define generator (lambda()
-    (call-with-current-continuation control-state)))
- 
-  generator))
-  
-  
-(define generate-digit
-  (generate-one-element-at-a-time '(0 1 2)))
-(display 
-    (generate-digit)
-    (generate-digit)
-    (generate-digit)
-    (generate-digit))
-</pre><pre>; yin-yang puzzle
-; https://en.wikipedia.org/wiki/Call-with-current-continuation
-(let* ((yin
-         ((lambda (cc) (display "#\@") cc) (call-with-current-continuation (lambda (c) c))))
-       (yang
-         ((lambda (cc) (display "#\*") cc) (call-with-current-continuation (lambda (c) c)))))
-	            (yin yang))</pre>
-
-	</div>
 </div>
 <div id="footer">Copyright 2015, available on <a href="https://github.com/encse/sicp">GitHub</a></div>
 
 <script src="lib/requirejs/require.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
 <script>
 	require.config({
 		paths: {
@@ -174,14 +37,27 @@
 </script>
 <script src="js/app.js"></script>
 <script>
-	var sicpEditor = new Editor.SicpEditor(
-		document.getElementById("editor"),
-		document.getElementById("output-content"),
-		document.getElementById("variables-content"),
-		Array.prototype.slice.call(document.getElementsByTagName("pre")).map(function(pre) {
-			return pre.innerHTML;
-		}));
-
+	samples = [
+		'samples/factorial.ms',
+		'samples/odd-or-even.ms',
+		'samples/counting-change.ms',
+		'samples/n-queens.ms',
+		'samples/return-with-callcc.ms',
+		'samples/lazy-generator.ms',
+		'samples/yin-yang.ms'
+	];
+	$.when.apply($, samples.map(function (url, i) {
+		return $.get(url)
+			.then(function (data) { samples[i] = data; })
+			.fail(function(data) { samples[i] = null; });
+	})).always(function() {
+			var sicpEditor = new Editor.SicpEditor(
+				document.getElementById("editor"),
+				document.getElementById("output-content"),
+				document.getElementById("variables-content"),
+				samples.filter(function(sample) { return !!sample; })
+		);
+	});
 </script>
 </body>
 
