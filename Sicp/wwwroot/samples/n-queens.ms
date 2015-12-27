@@ -49,7 +49,7 @@
                  (cond
                    ((null? sol) '())
                    (else (begin 
-                        (display sol)
+                        (display sol " ")
                         (cons sol (loop (backtrack sol boardsize)))))))))
       (loop (build-solution '() boardsize)))))
 (define queens

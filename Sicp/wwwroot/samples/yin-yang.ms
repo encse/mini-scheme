@@ -8,7 +8,7 @@
 ; known as the yin-yang puzzle.It was then being customary to show while discussing call/cc:
 
 (let* ((yin
-         ((lambda (cc) (display "#\@") cc) (call-with-current-continuation (lambda (c) c))))
+         ((lambda (cc) (display "@") (newline) cc) (call-with-current-continuation (lambda (c) c))))
        (yang
-         ((lambda (cc) (display "#\*") cc) (call-with-current-continuation (lambda (c) c)))))
+         ((lambda (cc) (display "*") cc) (call-with-current-continuation (lambda (c) c)))))
 	            (yin yang))

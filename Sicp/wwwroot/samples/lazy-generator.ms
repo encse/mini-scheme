@@ -32,9 +32,9 @@
 (define generate-digit
   (generate-one-element-at-a-time '(0 1 2)))
 (display 
-    (generate-digit)
-    (generate-digit)
-    (generate-digit)
+    (generate-digit) " "
+    (generate-digit) " "
+    (generate-digit) " "
     (generate-digit))
 
 ; Every time the loop is about to process another item from the list, 

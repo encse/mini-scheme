@@ -27,12 +27,15 @@ module Sicp.Lang {
             env.define('or', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.or(args))));
             env.define('display', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
                 while (!SvCons.isNil(args)) {
-                    log(SvCons.car(args).toString());
+                    log(SvCons.car(args).toDisplayString());
                     args = SvCons.cdr(args);
                 }
                 return SvCons.Nil;
             })));
-
+            env.define('newline', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
+                log('\n');
+                return SvCons.Nil;
+            })));
             this.evaluator = new Evaluator.BaseEvaluator();
             this.evaluator.setEvaluators([
                 new Evaluator.BreakpointEvaluator(this.evaluator),

@@ -6,6 +6,10 @@
         ilineEnd: number;
         icolEnd: number;
 
+        public toDisplayString(): string {
+            return this.toString();
+        }
+
         public withSourceInfo(first: ISourceInfo, last: ISourceInfo):Sv {
             this.ilineStart = first.ilineStart;
             this.icolStart = first.icolStart;
@@ -46,6 +50,10 @@
 
         public toString(): string {
             return "T(" + this._val.toString()+")";
+        }
+
+        public toDisplayString(): string {
+            return '';
         }
     }
 
@@ -124,7 +132,15 @@
             return new SvNumber(l);
         }
 
+        public toDisplayString(): string {
+            return this.toStringI(sv => sv.toDisplayString());
+        }
+
         public toString(): string {
+            return this.toStringI(sv => sv.toString());
+        }
+
+        public toStringI(dgDisplay:(sv:Sv)=>string): string {
             let st = '(';
             let first = true;
 
@@ -135,14 +151,14 @@
                 first = false;
 
                 if (SvCons.matches(rv)) {
-                    st += SvCons.car(rv).toString();
+                    st += dgDisplay(SvCons.car(rv));
                     rv = SvCons.cdr(rv);
                     if (SvAtom.matches(rv)) {
-                        st += " . " + rv.toString();
+                        st += " . " + dgDisplay(rv);
                         break;
                     }
                 } else {
-                    st += rv.toString();
+                    st += dgDisplay(rv);
                     break;
                 }
             }
@@ -161,7 +177,9 @@
             if (!SvAny.matches(node)) throw "SvAny expected";
             return (<SvAny>node)._val;
         }
-
+        public toDisplayString(): string {
+            return '';
+        }
         public toString(): string {
             return this._val.toString();
         }
@@ -185,6 +203,10 @@
         public static val(node: Sv) {
             if (!SvBool.matches(node)) throw "bool expected";
             return (<SvBool>node)._val;
+        }
+
+        public toDisplayString(): string {
+            return this.toString();
         }
 
         public toString(): string {
@@ -232,6 +254,10 @@
             return (<SvString>node)._val;
         }
 
+        public toDisplayString(): string {
+            return this._val;
+        }
+
         public toString(): string {
             return JSON.stringify(this._val);
         }
@@ -247,6 +273,12 @@
             return (<SvNumber>node)._val;
         }
 
+
+        public toDisplayString(): string {
+            return this.toString();
+        }
+
+
         public toString(): string {
             return "" + this._val;
         }
@@ -260,6 +292,10 @@
         public static val(node: Sv) {
             if (!SvSymbol.matches(node)) throw "Symbol expected";
             return (<SvSymbol>node)._val;
+        }
+
+        public toDisplayString(): string {
+            return this.toString();
         }
 
         public toString(): string {

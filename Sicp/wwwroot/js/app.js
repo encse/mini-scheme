@@ -73,7 +73,8 @@ var Editor;
             this.outputElement.innerHTML = "";
         };
         SicpEditor.prototype.log = function (st) {
-            this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + "\n" + st;
+            st = st.replace('\n', '<br />');
+            this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + st;
         };
         SicpEditor.prototype.setMarker = function (sv) {
             this.clearMarker();
@@ -745,9 +746,13 @@ var Sicp;
                 env.define('or', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.or(args); })));
                 env.define('display', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) {
                     while (!Lang.SvCons.isNil(args)) {
-                        log(Lang.SvCons.car(args).toString());
+                        log(Lang.SvCons.car(args).toDisplayString());
                         args = Lang.SvCons.cdr(args);
                     }
+                    return Lang.SvCons.Nil;
+                })));
+                env.define('newline', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) {
+                    log('\n');
                     return Lang.SvCons.Nil;
                 })));
                 this.evaluator = new Sicp.Evaluator.BaseEvaluator();
@@ -940,6 +945,9 @@ var Sicp;
         var Sv = (function () {
             function Sv() {
             }
+            Sv.prototype.toDisplayString = function () {
+                return this.toString();
+            };
             Sv.prototype.withSourceInfo = function (first, last) {
                 this.ilineStart = first.ilineStart;
                 this.icolStart = first.icolStart;
@@ -995,6 +1003,9 @@ var Sicp;
             };
             SvBreakpoint.prototype.toString = function () {
                 return "T(" + this._val.toString() + ")";
+            };
+            SvBreakpoint.prototype.toDisplayString = function () {
+                return '';
             };
             return SvBreakpoint;
         })(Sv);
@@ -1071,7 +1082,13 @@ var Sicp;
                 }
                 return new SvNumber(l);
             };
+            SvCons.prototype.toDisplayString = function () {
+                return this.toStringI(function (sv) { return sv.toDisplayString(); });
+            };
             SvCons.prototype.toString = function () {
+                return this.toStringI(function (sv) { return sv.toString(); });
+            };
+            SvCons.prototype.toStringI = function (dgDisplay) {
                 var st = '(';
                 var first = true;
                 var rv = this;
@@ -1080,15 +1097,15 @@ var Sicp;
                         st += " ";
                     first = false;
                     if (SvCons.matches(rv)) {
-                        st += SvCons.car(rv).toString();
+                        st += dgDisplay(SvCons.car(rv));
                         rv = SvCons.cdr(rv);
                         if (SvAtom.matches(rv)) {
-                            st += " . " + rv.toString();
+                            st += " . " + dgDisplay(rv);
                             break;
                         }
                     }
                     else {
-                        st += rv.toString();
+                        st += dgDisplay(rv);
                         break;
                     }
                 }
@@ -1110,6 +1127,9 @@ var Sicp;
                 if (!SvAny.matches(node))
                     throw "SvAny expected";
                 return node._val;
+            };
+            SvAny.prototype.toDisplayString = function () {
+                return '';
             };
             SvAny.prototype.toString = function () {
                 return this._val.toString();
@@ -1134,6 +1154,9 @@ var Sicp;
                 if (!SvBool.matches(node))
                     throw "bool expected";
                 return node._val;
+            };
+            SvBool.prototype.toDisplayString = function () {
+                return this.toString();
             };
             SvBool.prototype.toString = function () {
                 return this._val ? "#t" : "#f";
@@ -1177,6 +1200,9 @@ var Sicp;
                     throw "string expected";
                 return node._val;
             };
+            SvString.prototype.toDisplayString = function () {
+                return this._val;
+            };
             SvString.prototype.toString = function () {
                 return JSON.stringify(this._val);
             };
@@ -1195,6 +1221,9 @@ var Sicp;
                     throw "Number expected";
                 return node._val;
             };
+            SvNumber.prototype.toDisplayString = function () {
+                return this.toString();
+            };
             SvNumber.prototype.toString = function () {
                 return "" + this._val;
             };
@@ -1212,6 +1241,9 @@ var Sicp;
                 if (!SvSymbol.matches(node))
                     throw "Symbol expected";
                 return node._val;
+            };
+            SvSymbol.prototype.toDisplayString = function () {
+                return this.toString();
             };
             SvSymbol.prototype.toString = function () {
                 return this._val;

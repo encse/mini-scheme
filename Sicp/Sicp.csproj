@@ -83,6 +83,7 @@
     <Content Include="wwwroot\samples\return-with-callcc.ms" />
     <Content Include="wwwroot\samples\lazy-generator.ms" />
     <Content Include="wwwroot\samples\yin-yang.ms" />
+    <Content Include="wwwroot\samples\hanoi.ms" />
   </ItemGroup>
   <ItemGroup />
   <PropertyGroup>

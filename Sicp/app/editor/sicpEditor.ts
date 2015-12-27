@@ -98,7 +98,8 @@
         }
 
         log(st: string) {
-            this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + "\n" + st;
+            st = st.replace('\n', '<br />');
+            this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + st;
         }
 
         setMarker(sv: Sicp.Lang.Sv) {
