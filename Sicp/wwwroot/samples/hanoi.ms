@@ -1,4 +1,4 @@
-﻿; Hanoi towers
+; Tower of Hanoi
 
 (define (towers-of-hanoi n source dest temp)
   (if (= n 1)
