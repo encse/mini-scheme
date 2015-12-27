@@ -3,7 +3,7 @@ My toy implementation of a Scheme like programming language written in TypeScrip
 
 The most iteresting part, that actually made me to implement this was the `call-with-current-continuation` construct or `call/cc` for short (experienced Lispers and Schemers are now probably banging their heads agains the wall because of me not drawing a clear difference between the two). I just wanted to play with this construct a bit so that I understand it better. Also I haven't written an interpreter that supported anything like that before, so it was the best time to start.
 
-Since a simple interpreter would have been too simple and not very interesting to demo, I also added an editor (built on ACE) and some very limited debugging functionality.
+Since a simple interpreter would have been too simple and not very interesting to demo, I also added an editor (built on [ACE](https://ace.c9.io/#nav=about)) and some very limited debugging functionality.
 
 The project is hosted on [csokavar.hu](http://csokavar.hu/projects/mini-scheme).
 
