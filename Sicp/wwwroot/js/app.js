@@ -11,7 +11,6 @@ var Editor;
             this.currentTimeout = null;
             this.isRunning = false;
             this.interpreter = new Sicp.Lang.Interpreter();
-            this.ss = 0;
             require(['ace/ace'], function (ace) {
                 _this.Range = ace.require("ace/range").Range;
                 var divToolbar = document.createElement('div');
@@ -57,6 +56,7 @@ var Editor;
                     samples.forEach(function (sample) {
                         var option = document.createElement('option');
                         option.text = sample.split('\n')[0].trim();
+                        option.text = option.text.replace(/^; /, '');
                         option.value = sample;
                         selectSample.appendChild(option);
                     });
@@ -115,19 +115,6 @@ var Editor;
                     tr.appendChild(td1);
                     tr.appendChild(td2);
                 });
-            }
-        };
-        SicpEditor.prototype.stackSizeI = function () {
-            this.ss++;
-            this.stackSizeI();
-        };
-        SicpEditor.prototype.stackSize = function () {
-            this.ss = 0;
-            try {
-                this.stackSizeI();
-            }
-            catch (ex) {
-                return this.ss;
             }
         };
         SicpEditor.prototype.step = function () {

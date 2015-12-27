@@ -1,5 +1,9 @@
-﻿; lazy generator
+﻿; Lazy generator
 ; https://en.wikipedia.org/wiki/Call-with-current-continuation
+; In the following example, call/cc is used twice: 
+; once to generate a "return" continuation as in the first example 
+; and once to suspend an iteration through a list of items:
+
  (define for-each 
     (lambda (dg lst)
         (cond 
@@ -32,3 +36,10 @@
     (generate-digit)
     (generate-digit)
     (generate-digit))
+
+; Every time the loop is about to process another item from the list, 
+; the function grabs the current continuation, and assigns it to the variable 'control-state'. 
+; This variable initially is the closure that iterates through all elements of the list. 
+; As the computation progresses, it becomes a closure that iterates through a suffix of the given list. 
+; While the use of "call/cc" is unnecessary for a linear collection, such as [LISTOF X], the code 
+; generalizes to any collection that can be traversed.

@@ -1,4 +1,5 @@
-﻿; factorial 
+﻿; Factorial 
+
 (define factorial
     (lambda(x)
         (cond

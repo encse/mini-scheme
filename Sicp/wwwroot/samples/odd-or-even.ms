@@ -1,7 +1,8 @@
-﻿; odd or even
- (define (zero? n) (= n 0) )
+﻿; Odd or even
+
+(define (zero? n) (= n 0) )
  
- (letrec ( 
+(letrec ( 
     (even?
         (lambda (n)
             (if (zero? n)

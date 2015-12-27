@@ -76,6 +76,7 @@
                     samples.forEach(sample => {
                         const option = document.createElement('option');
                         option.text = sample.split('\n')[0].trim();
+                        option.text = option.text.replace(/^; /, '');
                         option.value = sample;
                         selectSample.appendChild(option);
 
@@ -148,21 +149,6 @@
                     tr.appendChild(td1);
                     tr.appendChild(td2);
                 });
-            }
-        }
-
-        ss: number = 0;
-        stackSizeI() {
-            this.ss++;
-            this.stackSizeI();
-        }
-
-        stackSize() {
-            this.ss = 0;
-            try {
-                this.stackSizeI();
-            } catch (ex) {
-                return this.ss;
             }
         }
 

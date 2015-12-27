@@ -1,6 +1,7 @@
 ﻿; Counting change
 ; How many different ways can we make change of $1.00 given half-dollars, quarters, dimes, nickels, and pennies? 
 ; From SICP Tree recursion, https://mitpress.mit.edu/sicp/full-text/sicp/book/node16.html
+
 (define (count-change amount)
   (cc amount 5))
 (define (cc amount kinds-of-coins)
