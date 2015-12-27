@@ -5,6 +5,8 @@ The most iteresting part, that actually made me to implement this was the `call-
 
 Since a simple interpreter would have been too simple and not very interesting to demo, I also added an editor (built on [ACE](https://ace.c9.io/#nav=about)) and some very limited debugging functionality.
 
+<img src="https://cloud.githubusercontent.com/assets/6275775/12012500/afe644b6-acf8-11e5-85d4-af9ff01135db.jpg" width="45%"></img> 
+
 The project is hosted on [csokavar.hu](http://csokavar.hu/projects/mini-scheme).
 
 # License
