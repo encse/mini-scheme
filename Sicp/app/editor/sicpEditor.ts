@@ -3,6 +3,7 @@
     {
         editor: AceAjax.Editor;
         outputElement: HTMLElement;
+        variablesElement: HTMLElement;
         currentMarker = null;
         currentTimeout = null;
         btnRun: HTMLButtonElement;
@@ -13,16 +14,18 @@
 
         isRunning:boolean = false;
         sv: Sicp.Lang.Sv;
+        env: Sicp.Lang.Env;
         interpreter = new Sicp.Lang.Interpreter();
         Range: any;
 
-        constructor(private editorDiv: HTMLElement, private samples:string[]) {
+        constructor(private editorDiv: HTMLElement, private outputDiv:HTMLElement, private variablesDiv:HTMLElement, private samples:string[]) {
            
             require(['ace/ace'], (ace) => {
                 this.Range = ace.require("ace/range").Range;
 
                 var divToolbar = document.createElement('div');
                 divToolbar.classList.add("sicp-editor-toolbar");
+             
                 editorDiv.appendChild(divToolbar);
                 this.btnRun = document.createElement('button');
                 this.btnRun.classList.add("sicp-editor-button");
@@ -59,27 +62,12 @@
                 editorWindow.classList.add("editorWindow");
                 editorDiv.appendChild(editorWindow);
 
-                this.outputElement = document.createElement('div');
-                editorDiv.appendChild(this.outputElement);
+                this.outputElement = outputDiv;
+                this.variablesElement = variablesDiv;
 
                 this.editor = ace.edit(editorWindow);
                 this.editor.setTheme('ace/theme/chrome');
                 this.editor.getSession().setMode('ace/mode/sicp');
-                this.editor.commands.addCommand({
-                    name: 'Run',
-                    bindKey: { win: 'Ctrl-R', mac: 'Command-R' },
-                    exec: editor => {
-                        this.run();
-                    }
-                });
-                this.editor.commands.addCommand({
-                    name: 'Next',
-                    bindKey: { win: 'Ctrl-E', mac: 'Command-E' },
-                    exec: editor => {
-                        this.step();
-                    }
-                });
-
 
                 if (samples) {
                     var selectSample: HTMLSelectElement = document.createElement('select');
@@ -132,6 +120,50 @@
             this.btnContinue.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
             this.btnStop.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
             this.btnStep.style.display = !this.isRunning ? "inline" : "none";
+
+            this.showVariables();
+
+        }
+
+        showVariables() {
+           
+            this.variablesElement.innerHTML = "";
+
+            if (this.isRunning)
+                return;
+
+
+            if (this.env) {
+                var table = document.createElement('table');
+                this.variablesElement.appendChild(table);
+                this.env.getNames().forEach(name => {
+                    var tr = document.createElement('tr');
+                    table.appendChild(tr);
+                    var td1 = document.createElement('td');
+                    td1.classList.add('sicp-variable-name');
+                    td1.innerHTML = name;
+                    var td2 = document.createElement('td');
+                    td1.classList.add('sicp-variable-value');
+                    td2.innerHTML = this.env.get(name).toString();
+                    tr.appendChild(td1);
+                    tr.appendChild(td2);
+                });
+            }
+        }
+
+        ss: number = 0;
+        stackSizeI() {
+            this.ss++;
+            this.stackSizeI();
+        }
+
+        stackSize() {
+            this.ss = 0;
+            try {
+                this.stackSizeI();
+            } catch (ex) {
+                return this.ss;
+            }
         }
 
         step() {
@@ -141,15 +173,20 @@
                 if (!this.sv)
                     this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
                 else
-                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 100 : 1);
+                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 10000 : 1);
                           
             } catch (ex) {
                 this.log(ex);
                 this.sv = null;
             }
 
-            if (this.sv == null)
+
+            if (this.sv == null) {
                 this.isRunning = false;
+                this.env = null;
+            } else {
+                this.env = Sicp.Lang.SvBreakpoint.env(this.sv);
+            }
 
             if (!this.isRunning) {
                 this.setMarker(this.sv);
@@ -161,6 +198,7 @@
 
         stop() {
             this.sv = null;
+            this.env = null;
             this.isRunning = false;
             this.clearMarker();
             this.clearOutput();

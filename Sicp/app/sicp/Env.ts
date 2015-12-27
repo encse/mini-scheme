@@ -1,10 +1,19 @@
 module Sicp.Lang {
     export class Env {
-        private obj:any= {};
+        private obj: {[id: string] : Sv} = {};
         private envParent: Env = null;
 
         constructor(envParent: Env) {
             this.envParent = envParent;
+        }
+
+        public getNames(): string[] {
+            const res:string[] = [];
+            for (let key in this.obj) {
+                if (this.obj.hasOwnProperty(key)) 
+                    res.push(key);
+            }
+            return res;
         }
 
         public get(name: string):Sv {

@@ -12,7 +12,7 @@ module Sicp.Evaluator {
         public static evalCall(operator:Lang.Sv, args: Lang.Sv, cont:Lang.Cont, evaluator:Evaluator.BaseEvaluator):Lang.Sv {
              
             if (this.isPrimitiveProcedure(operator)) {
-                return cont(this.getPrimitiveProcedureDelegate(operator)(args));
+                return new Lang.SvThunk(cont, this.getPrimitiveProcedureDelegate(operator)(args));
             }
             else if (this.isContinuation(operator)) {
                 let arg: Lang.Sv = Lang.SvCons.Nil;
@@ -87,7 +87,7 @@ module Sicp.Evaluator {
             const evaluatedArgs = new Lang.SvCons(null, null);
             const loop = (evaluatedArgsLast: Lang.Sv, args: Lang.Sv) :Lang.Sv => {
                 if (Lang.SvCons.isNil(args)) {
-                    return cont(evaluatedArgs);
+                    return new Lang.SvThunk(cont, evaluatedArgs);
                 }
                 return this.evaluator.evaluate(Lang.SvCons.car(args), env, (evaluatedArg: Lang.Sv) => {
                     Lang.SvCons.setCar(evaluatedArgsLast, evaluatedArg);

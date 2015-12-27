@@ -15,7 +15,7 @@ module Sicp.Evaluator {
                 env.set(
                     Sicp.Lang.SvSymbol.val(this.getVariable(sv)),
                     svValue);
-                return cont(svValue);
+                return new Lang.SvThunk(cont, svValue);
             });
         }
 

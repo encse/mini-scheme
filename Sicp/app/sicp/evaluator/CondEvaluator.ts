@@ -17,7 +17,7 @@ module Sicp.Evaluator {
 
             var loop = (clauses: Lang.Sv) => {
                 if (Lang.SvCons.isNil(clauses))
-                    return cont(clauses);
+                    return new Lang.SvThunk(cont, clauses);
 
                 var clause = Lang.SvCons.car(clauses);
                 if (this.isCondElseClause(clause))

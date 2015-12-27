@@ -12,7 +12,7 @@ module Sicp.Evaluator {
                 LambdaEvaluator.getLambdaParameters(sv),
                 LambdaEvaluator.getLambdaBody(sv),
                 env);
-            return cont(proc);
+            return new Lang.SvThunk(cont, proc);
         }
 
         public static createCompoundProcedure(params: Lang.Sv, body: Lang.Sv, env: Lang.Env):Lang.Sv {

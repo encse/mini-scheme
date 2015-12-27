@@ -4,51 +4,27 @@
     <meta charset="utf-8" />
     <title>Mini Scheme</title>
     <link rel="stylesheet" href="css/app.css" type="text/css" />
-    <style>
-        .editorWindow {
-            position: relative;
-            height: 400px;
-            width: 100%;
-            margin: 10px auto;
-        }
-		.errorHighlight {
-			background: yellow;
-			position: absolute;
-		}
-		.sicp-editor-toolbar {
-			display: flex;
-		}
-		.sicp-editor-button {
-			margin: 5px;
-			padding: 5px;
-		}
-		.sicp-editor-select-sample {
-			margin-left: auto;
-			padding: 5px;
-		}
-		.samples {
-			display: none;
-		}
-    </style>
 </head>
 <body>
-	<div id="container">
-		<div id="top">
-			<div id="top-content">
-				<div id="logo">
-					<h1>
-						<a href="http://csokavar.hu/projects/minischeme">/mini-scheme</a>
-					</h1>
-				</div>
+	<div id="header">
+		<h2>Mini scheme</h2>
+		<p>by <a href="http://csokavar.hu">encse</a></p>
+	</div>
+<div id="editor-wrap">
+	<div id="editor"></div>
+	<div id="editor-bottom">
+		<div id="output" class="sicp-box">
+			<p class="sicp-box-title">output</p>
+			<div id="output-content" class="sicp-box-content">
 			</div>
-		</div> <!-- top -->
-
-		<div id="main">
-			<div id="main-content">
-				<h2>Mini scheme</h2>
-				<div id="editor"></div>
-				<div class="samples">
-					<pre>; factorial 
+		</div>
+		<div id="variables" class="sicp-box">
+			<p class="sicp-box-title">variables</p>
+			<div id="variables-content" class="sicp-box-content"></div>
+		</div>
+	</div>
+	<div class="samples">
+		<pre>; factorial 
 (define factorial
     (lambda(x)
         (cond
@@ -60,7 +36,7 @@
 (display (factorial 5))
 </pre>
 
-					<pre>; odd or even
+		<pre>; odd or even
  (define (zero? n) (= n 0) )
  
  (letrec ( 
@@ -77,14 +53,13 @@
     (display (even? 88))
 )
 </pre>
-					<pre>; n-queens
+		<pre>; n-queens
 (define (add1 n)
     (+ n 1)
 )
 (define (sub1 n)
     (- n 1)
 )
-
 (define legal?
   (lambda (try legal-pl)
     (letrec
@@ -101,30 +76,25 @@
                               (add1 up)
                               (sub1 down)))))))))
       (good? legal-pl (add1 try) (sub1 try)))))
-
 (define solution?
     (lambda (legal-pl boardsize)
       (= (length legal-pl) boardsize)))
-
 (define build-solution
   (lambda (legal-pl boardsize)
     (cond
       ((solution? legal-pl boardsize) legal-pl)
       (else (forward boardsize legal-pl boardsize)))))
-
 (define forward
   (lambda (try legal-pl boardsize)
     (cond
       ((zero? try) (backtrack legal-pl boardsize))
       ((legal? try legal-pl) (build-solution (cons try legal-pl) boardsize))
       (else (forward (sub1 try) legal-pl boardsize)))))
-
 (define backtrack
   (lambda (legal-pl boardsize)
     (cond
       ((null? legal-pl) '())
       (else (forward (sub1 (car legal-pl)) (cdr legal-pl) boardsize)))))
-
 (define build-all-solutions
   (lambda (boardsize)
     (letrec
@@ -135,13 +105,12 @@
                         (display sol)
                         (cons sol (loop (backtrack sol boardsize)))))))))
       (loop (build-solution '() boardsize)))))
-
 (define queens
   (lambda (n)
     (build-all-solutions n)))
     
-(queens 4)</pre>
-					<pre>; emulate return with call/cc 
+(queens 8)</pre>
+		<pre>; emulate return with call/cc 
 ; https://en.wikipedia.org/wiki/Call-with-current-continuation
 (define (f return)
 	(return 2)
@@ -149,7 +118,7 @@
 (display (f (lambda (x) x))) ; displays 3
 (display (call-with-current-continuation f)) ; displays 2
 </pre>
-					<pre>; lazy generator
+		<pre>; lazy generator
 ; https://en.wikipedia.org/wiki/Call-with-current-continuation
  (define for-each 
     (lambda (dg lst)
@@ -190,35 +159,30 @@
        (yang
          ((lambda (cc) (display "#\*") cc) (call-with-current-continuation (lambda (c) c)))))
 	            (yin yang))</pre>
-					
-				</div>
-			</div> <!-- main-content -->
-		</div> <!-- main -->
 
-		<div id="footer">
-			<p><a href="http://www.csokavar.hu/">Encsé Művek</a> - 2015</p>
-			<p>Kapcsolat: <a href="mailto:encse@csokavar.hu">encse@csokavar.hu</a></p>
-		</div>
+	</div>
+</div>
+<div id="footer">Copyright 2015, available on <a href="https://github.com/encse/sicp">GitHub</a></div>
 
-	</div> <!--container -->
+<script src="lib/requirejs/require.js"></script>
+<script>
+	require.config({
+		paths: {
+			ace: "js/ace"
+		}
+	});
+</script>
+<script src="js/app.js"></script>
+<script>
+	var sicpEditor = new Editor.SicpEditor(
+		document.getElementById("editor"),
+		document.getElementById("output-content"),
+		document.getElementById("variables-content"),
+		Array.prototype.slice.call(document.getElementsByTagName("pre")).map(function(pre) {
+			return pre.innerHTML;
+		}));
 
-	<script src="lib/requirejs/require.js"></script>
-	<script>
-		require.config({
-			paths: {
-				ace: "js/ace"
-			}
-		});
-	</script>
-	<script src="js/app.js"></script>
-	<script>
-		var sicpEditor = new Editor.SicpEditor(
-			document.getElementById("editor"),
-			Array.prototype.slice.call(document.getElementsByTagName("pre")).map(function (pre) {
-				return pre.innerHTML;
-			}));
-
-	</script>
+</script>
 </body>
 
 </html>

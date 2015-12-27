@@ -15,14 +15,14 @@ module Sicp.Evaluator {
                 env.define(
                     Lang.SvSymbol.val(this.getFunctionName(sv)),
                     lambda);
-                return cont(lambda);
+                return new Lang.SvThunk(cont, lambda);
             }
             else {
                 return this.evaluator.evaluate(this.getValue(sv), env, (svValue: Lang.Sv):Lang.Sv => {
                     env.define(
                         Lang.SvSymbol.val(this.getVariable(sv)),
                         svValue);
-                    return cont(svValue);
+                    return new Lang.SvThunk(cont, svValue);
                 });
             }
         }

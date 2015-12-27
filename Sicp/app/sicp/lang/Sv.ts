@@ -20,13 +20,28 @@
     }
 
     export class SvThunk extends Sv {
-        public constructor(public _val: () => Sv) { super(); }
+        public constructor(private cont: Lang.Cont, private val: Sv) { super(); }
 
         public static matches(node: Sv) { return node instanceof SvThunk; }
 
+        public static call(sv: Sv) {
+            if (!SvThunk.matches(sv)) throw "Thunk expected";
+
+            return (<SvThunk>sv).cont((<SvThunk>sv).val);
+        }
+    }
+    export class SvBreakpoint extends Sv {
+        public constructor(public _val: () => Sv, private _env:Env) { super(); }
+
+        public static matches(node: Sv) { return node instanceof SvBreakpoint; }
+
+        public static env(sv: Sv): Env {
+            if (!SvBreakpoint.matches(sv)) throw "Breakpoint expected";
+            return (<SvBreakpoint>sv)._env;
+        } 
         public static val(node: Sv): () => Sv {
-            if (!SvThunk.matches(node)) throw "Thunk expected";
-            return (<SvThunk>node)._val;
+            if (!SvBreakpoint.matches(node)) throw "Breakpoint expected";
+            return (<SvBreakpoint>node)._val;
         }
 
         public toString(): string {

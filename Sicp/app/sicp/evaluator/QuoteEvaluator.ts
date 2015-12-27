@@ -8,7 +8,7 @@ module Sicp.Evaluator {
 
         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
             var res = Lang.SvCons.cdr(sv);
-            return cont(res);
+            return new Lang.SvThunk(cont, res);
         }
     }
 }

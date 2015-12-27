@@ -24,7 +24,7 @@ module Sicp.Evaluator {
                 if (this.evaluators[i].matches(sv)) {
                     this.step++;
                     if (this.step % this.stepCount == 0)
-                        return new Lang.SvThunk(() => this.evaluators[i].evaluate(sv, env, cont)).withSourceInfo(sv, sv);
+                        return new Lang.SvBreakpoint(() => this.evaluators[i].evaluate(sv, env, cont), env).withSourceInfo(sv, sv);
                     else
                         return this.evaluators[i].evaluate(sv, env, cont);
 
@@ -38,7 +38,7 @@ module Sicp.Evaluator {
             var lastSv: Lang.Sv = Lang.SvCons.Nil;
             var loop = (exprs: Lang.Sv) => {
                 if (Lang.SvCons.isNil(exprs))
-                    return cont(lastSv);
+                    return new Lang.SvThunk(cont, lastSv);
 
                 return this.evaluate(Sicp.Lang.SvCons.car(exprs), env, (sv: Lang.Sv) => {
                     lastSv = sv;

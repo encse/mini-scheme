@@ -26,13 +26,16 @@ module Sicp.Lang {
             env.define('and', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.and(args))));
             env.define('or', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.or(args))));
             env.define('display', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
-                log(args.toString());
+                while (!SvCons.isNil(args)) {
+                    log(SvCons.car(args).toString());
+                    args = SvCons.cdr(args);
+                }
                 return SvCons.Nil;
             })));
 
             this.evaluator = new Evaluator.BaseEvaluator();
             this.evaluator.setEvaluators([
-                new Evaluator.ThunkEvaluator(this.evaluator),
+                new Evaluator.BreakpointEvaluator(this.evaluator),
                 new Evaluator.SelfEvaluator(),
                 new Evaluator.VariableEvaluator(),
                 new Evaluator.LetEvaluator(this.evaluator),
@@ -55,10 +58,14 @@ module Sicp.Lang {
 
         public step(sv: Sv, stepCount: number): Sv {
             this.evaluator.setStepCount(stepCount);
-            if (Lang.SvThunk.matches(sv))
-                sv = Lang.SvThunk.val(sv)();
 
-            return Lang.SvThunk.matches(sv) ? sv : null;
+            if (Lang.SvBreakpoint.matches(sv)) {
+                sv = Lang.SvBreakpoint.val(sv)();
+                while (Lang.SvThunk.matches(sv))
+                    sv = Lang.SvThunk.call(sv);
+            }
+        
+            return Lang.SvBreakpoint.matches(sv) ? sv : null;
         }
 
     }

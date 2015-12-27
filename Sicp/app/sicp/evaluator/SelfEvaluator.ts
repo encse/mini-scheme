@@ -7,7 +7,7 @@ module Sicp.Evaluator {
         }
 
         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
-            return cont(sv);
+            return new Lang.SvThunk(cont, sv);
         }
     }
 }
