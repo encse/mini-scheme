@@ -1,4 +1,4 @@
-﻿; Lazy generator
+; Lazy generator
 ; https://en.wikipedia.org/wiki/Call-with-current-continuation
 ; In the following example, call/cc is used twice: 
 ; once to generate a "return" continuation as in the first example 
@@ -10,8 +10,8 @@
             ((null? lst) ())
             (else 
                 (dg (car lst))
-                (for-each dg (cdr lst))))
-    ))
+                (for-each dg (cdr lst))))))
+
 (define generate-one-element-at-a-time (lambda (lst)
   (define control-state (lambda (return)
     (for-each 
@@ -31,6 +31,7 @@
   
 (define generate-digit
   (generate-one-element-at-a-time '(0 1 2)))
+
 (display 
     (generate-digit) " "
     (generate-digit) " "
