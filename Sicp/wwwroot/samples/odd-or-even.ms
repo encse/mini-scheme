@@ -1,7 +1,5 @@
-﻿; Odd or even
+; Odd or even
 
-(define (zero? n) (= n 0) )
- 
 (letrec ( 
     (even?
         (lambda (n)
@@ -13,5 +11,4 @@
             (if (zero? n)
                  #f
                 (even? (- n 1))))))
-    (display (even? 88))
-)
+    (display (even? 88)))
