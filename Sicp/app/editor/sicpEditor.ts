@@ -134,22 +134,34 @@
             if (this.isRunning)
                 return;
 
-
-            if (this.env) {
-                var table = document.createElement('table');
-                this.variablesElement.appendChild(table);
-                this.env.getNames().forEach(name => {
-                    var tr = document.createElement('tr');
-                    table.appendChild(tr);
-                    var td1 = document.createElement('td');
-                    td1.classList.add('sicp-variable-name');
-                    td1.innerHTML = name;
-                    var td2 = document.createElement('td');
-                    td1.classList.add('sicp-variable-value');
-                    td2.innerHTML = this.env.get(name).toString();
-                    tr.appendChild(td1);
-                    tr.appendChild(td2);
-                });
+            var env = this.env;
+            while (env) {
+                (self => {
+                    var divScope = document.createElement('div');
+                    var pTitle = document.createElement('p');
+                    pTitle.classList.add('sicp-tree-node-title');
+                    $(pTitle).click(() => { $(divScope).toggleClass('sicp-tree-node-collapsed'); });
+                    pTitle.innerHTML = 'scope';
+                    var table = document.createElement('table');
+                    table.classList.add('sicp-tree-node-content');
+                    divScope.appendChild(pTitle);
+                    divScope.appendChild(table);
+                    self.variablesElement.appendChild(divScope);
+                    env.getNames().forEach(name => {
+                        var tr = document.createElement('tr');
+                        table.appendChild(tr);
+                        var td1 = document.createElement('td');
+                        td1.classList.add('sicp-variable-name');
+                        td1.innerHTML = name;
+                        var td2 = document.createElement('td');
+                        td1.classList.add('sicp-variable-value');
+                        td2.innerHTML = this.env.get(name).toString();
+                        tr.appendChild(td1);
+                        tr.appendChild(td2);
+                    });
+                })(this);
+                
+                env = env.getEnvParent();
             }
         }
 

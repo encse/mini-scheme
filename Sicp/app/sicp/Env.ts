@@ -8,12 +8,16 @@ module Sicp.Lang {
         }
 
         public getNames(): string[] {
-            const res:string[] = [];
+            const res: string[] = [];
             for (let key in this.obj) {
-                if (this.obj.hasOwnProperty(key)) 
+                if (this.obj.hasOwnProperty(key))
                     res.push(key);
             }
             return res;
+        }
+
+        public getEnvParent(): Env {
+            return this.envParent;
         }
 
         public get(name: string):Sv {
