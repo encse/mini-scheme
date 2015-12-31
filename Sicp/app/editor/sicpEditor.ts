@@ -141,13 +141,17 @@
                     var pTitle = document.createElement('p');
                     pTitle.classList.add('sicp-tree-node-title');
                     $(pTitle).click(() => { $(divScope).toggleClass('sicp-tree-node-collapsed'); });
-                    pTitle.innerHTML = 'scope';
-                    var table = document.createElement('table');
-                    table.classList.add('sicp-tree-node-content');
+                    pTitle.innerHTML = 'Scope';
+                  
                     divScope.appendChild(pTitle);
-                    divScope.appendChild(table);
                     self.variablesElement.appendChild(divScope);
+                    var table: HTMLElement;
                     env.getNames().forEach(name => {
+                        if (!table) {
+                            table = document.createElement('table');
+                            table.classList.add('sicp-tree-node-content');
+                            divScope.appendChild(table);
+                        }
                         var tr = document.createElement('tr');
                         table.appendChild(tr);
                         var td1 = document.createElement('td');
@@ -159,6 +163,13 @@
                         tr.appendChild(td1);
                         tr.appendChild(td2);
                     });
+
+                    if (!table) {
+                        var pNoContent = document.createElement('p');
+                        pNoContent.innerHTML = '&laquo; empty &raquo;';
+                        pNoContent.classList.add('sicp-scope-empty');
+                        divScope.appendChild(pNoContent);
+                    }
                 })(this);
                 
                 env = env.getEnvParent();

@@ -119,7 +119,7 @@ body {
 }
 
 .sicp-box {
-	font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
+	font-family: 'Lucida Grande', sans-serif;
 	font-size: 12px;
 	border-top: 1px solid lightgray;
 	border-left: 1px solid lightgray;
@@ -137,34 +137,50 @@ body {
 
 .sicp-box-title {
 	background: #f3f3f3;
-	color: #333;
-	padding: 2px 4px;
+	padding: 4px;
 	font-size: 12px;
 	margin: 0;
 	flex-shrink: 0;
+	border-bottom: 1px solid #dadada;
 }
+
 
 .sicp-box-content {
 	overflow-y: scroll;
 	flex-grow: 1;
 }
 
-.sicp-tree-node-title:before {
-	content:'▼ ';
-}
-
 .sicp-tree-node-title {
 	margin: 0;
 	padding: 0;
 	background: #ebebeb;
+	border-bottom: 1px solid #dadada;
+	padding: 4px;
+	
 }
+
+
+.sicp-tree-node-title:before {
+	content:'▼ ';
+	font-size: 10px;
+	color: #777777;
+	
+}
+
 .sicp-tree-node-collapsed .sicp-tree-node-title:before {
 	content:'► ';
+	font-size: 10px;
+	color: #777777;
+
 }
 .sicp-tree-node-collapsed .sicp-tree-node-content {
 	display: none;	
 }
 
+.sicp-scope-empty {
+	text-align: center;
+	color: #777777;
+}
 #output {
 	width: 60%;
 }

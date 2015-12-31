@@ -1,49 +1,242 @@
+var Editor;
+(function (Editor) {
+    var SicpEditor = (function () {
+        function SicpEditor(editorDiv, outputDiv, variablesDiv, samples) {
+            var _this = this;
+            this.editorDiv = editorDiv;
+            this.outputDiv = outputDiv;
+            this.variablesDiv = variablesDiv;
+            this.samples = samples;
+            this.currentMarker = null;
+            this.currentTimeout = null;
+            this.isRunning = false;
+            this.interpreter = new Sicp.Lang.Interpreter();
+            require(['ace/ace'], function (ace) {
+                _this.Range = ace.require("ace/range").Range;
+                var divToolbar = document.createElement('div');
+                divToolbar.classList.add("sicp-editor-toolbar");
+                editorDiv.appendChild(divToolbar);
+                _this.btnRun = document.createElement('button');
+                _this.btnRun.classList.add("sicp-editor-button");
+                _this.btnRun.innerHTML = "run";
+                _this.btnRun.onclick = function () { return _this.run(); };
+                divToolbar.appendChild(_this.btnRun);
+                _this.btnBreak = document.createElement('button');
+                _this.btnBreak.classList.add("sicp-editor-button");
+                _this.btnBreak.innerHTML = "break";
+                _this.btnBreak.onclick = function () { return _this.break(); };
+                divToolbar.appendChild(_this.btnBreak);
+                _this.btnStop = document.createElement('button');
+                _this.btnStop.classList.add("sicp-editor-button");
+                _this.btnStop.innerHTML = "stop";
+                _this.btnStop.onclick = function () { return _this.stop(); };
+                divToolbar.appendChild(_this.btnStop);
+                _this.btnStep = document.createElement('button');
+                _this.btnStep.classList.add("sicp-editor-button");
+                _this.btnStep.innerHTML = "step";
+                _this.btnStep.onclick = function () { return _this.step(); };
+                divToolbar.appendChild(_this.btnStep);
+                _this.btnContinue = document.createElement('button');
+                _this.btnContinue.classList.add("sicp-editor-button");
+                _this.btnContinue.innerHTML = "continue";
+                _this.btnContinue.onclick = function () { return _this.continue(); };
+                divToolbar.appendChild(_this.btnContinue);
+                var editorWindow = document.createElement('div');
+                editorWindow.classList.add("editorWindow");
+                editorDiv.appendChild(editorWindow);
+                _this.outputElement = outputDiv;
+                _this.variablesElement = variablesDiv;
+                _this.editor = ace.edit(editorWindow);
+                _this.editor.setTheme('ace/theme/chrome');
+                _this.editor.getSession().setMode('ace/mode/sicp');
+                if (samples) {
+                    var selectSample = document.createElement('select');
+                    selectSample.classList.add("sicp-editor-select-sample");
+                    divToolbar.appendChild(selectSample);
+                    samples.forEach(function (sample) {
+                        var option = document.createElement('option');
+                        option.text = sample.split('\n')[0].trim();
+                        option.text = option.text.replace(/^; /, '');
+                        option.value = sample;
+                        selectSample.appendChild(option);
+                    });
+                    selectSample.onchange = function () {
+                        _this.stop();
+                        _this.editor.setValue(selectSample.options[selectSample.selectedIndex].value, -1);
+                    };
+                    selectSample.onchange(null);
+                }
+                _this.updateUI();
+            });
+        }
+        SicpEditor.prototype.clearOutput = function () {
+            this.outputElement.innerHTML = "";
+        };
+        SicpEditor.prototype.log = function (st) {
+            st = st.replace('\n', '<br />');
+            this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + st;
+        };
+        SicpEditor.prototype.setMarker = function (sv) {
+            this.clearMarker();
+            if (sv) {
+                this.currentMarker = this.editor.getSession().addMarker(new this.Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
+                this.editor.gotoLine(sv.ilineStart);
+            }
+        };
+        SicpEditor.prototype.clearMarker = function () {
+            if (this.currentMarker !== null)
+                this.editor.getSession().removeMarker(this.currentMarker);
+        };
+        SicpEditor.prototype.updateUI = function () {
+            this.editor.setReadOnly(this.sv != null);
+            this.btnRun.style.display = this.sv == null ? "inline" : "none";
+            this.btnBreak.style.display = this.isRunning ? "inline" : "none";
+            this.btnContinue.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
+            this.btnStop.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
+            this.btnStep.style.display = !this.isRunning ? "inline" : "none";
+            this.showVariables();
+        };
+        SicpEditor.prototype.showVariables = function () {
+            var _this = this;
+            this.variablesElement.innerHTML = "";
+            if (this.isRunning)
+                return;
+            var env = this.env;
+            while (env) {
+                (function (self) {
+                    var divScope = document.createElement('div');
+                    var pTitle = document.createElement('p');
+                    pTitle.classList.add('sicp-tree-node-title');
+                    $(pTitle).click(function () { $(divScope).toggleClass('sicp-tree-node-collapsed'); });
+                    pTitle.innerHTML = 'Scope';
+                    divScope.appendChild(pTitle);
+                    self.variablesElement.appendChild(divScope);
+                    var table;
+                    env.getNames().forEach(function (name) {
+                        if (!table) {
+                            table = document.createElement('table');
+                            table.classList.add('sicp-tree-node-content');
+                            divScope.appendChild(table);
+                        }
+                        var tr = document.createElement('tr');
+                        table.appendChild(tr);
+                        var td1 = document.createElement('td');
+                        td1.classList.add('sicp-variable-name');
+                        td1.innerHTML = name;
+                        var td2 = document.createElement('td');
+                        td1.classList.add('sicp-variable-value');
+                        td2.innerHTML = _this.env.get(name).toString();
+                        tr.appendChild(td1);
+                        tr.appendChild(td2);
+                    });
+                    if (!table) {
+                        var pNoContent = document.createElement('p');
+                        pNoContent.innerHTML = '&laquo; empty &raquo;';
+                        pNoContent.classList.add('sicp-scope-empty');
+                        divScope.appendChild(pNoContent);
+                    }
+                })(this);
+                env = env.getEnvParent();
+            }
+        };
+        SicpEditor.prototype.step = function () {
+            this.clearMarker();
+            try {
+                if (!this.sv)
+                    this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
+                else
+                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 10000 : 1);
+            }
+            catch (ex) {
+                this.log(ex);
+                this.sv = null;
+            }
+            if (this.sv == null) {
+                this.isRunning = false;
+                this.env = null;
+            }
+            else {
+                this.env = Sicp.Lang.SvBreakpoint.env(this.sv);
+            }
+            if (!this.isRunning) {
+                this.setMarker(this.sv);
+            }
+            else
+                this.currentTimeout = window.setTimeout(this.step.bind(this), 1);
+            this.updateUI();
+        };
+        SicpEditor.prototype.stop = function () {
+            this.sv = null;
+            this.env = null;
+            this.isRunning = false;
+            this.clearMarker();
+            this.clearOutput();
+            clearTimeout(this.currentTimeout);
+            this.updateUI();
+        };
+        SicpEditor.prototype.run = function () {
+            this.stop();
+            this.continue();
+        };
+        SicpEditor.prototype.continue = function () {
+            this.isRunning = true;
+            this.step();
+        };
+        SicpEditor.prototype.break = function () {
+            this.isRunning = false;
+        };
+        return SicpEditor;
+    })();
+    Editor.SicpEditor = SicpEditor;
+})(Editor || (Editor = {}));
 var Sicp;
 (function (Sicp) {
-    var Evaluator;
-    (function (Evaluator) {
-        var BreakpointEvaluator = (function () {
-            function BreakpointEvaluator(evaluator) {
-                this.evaluator = evaluator;
+    var Lang;
+    (function (Lang) {
+        var Env = (function () {
+            function Env(envParent) {
+                this.obj = {};
+                this.envParent = null;
+                this.envParent = envParent;
             }
-            BreakpointEvaluator.prototype.matches = function (sv) {
-                return Sicp.Lang.SvBreakpoint.matches(sv);
+            Env.prototype.getNames = function () {
+                var res = [];
+                for (var key in this.obj) {
+                    if (this.obj.hasOwnProperty(key))
+                        res.push(key);
+                }
+                return res;
             };
-            BreakpointEvaluator.prototype.evaluate = function (sv, env, cont) {
-                return new Sicp.Lang.SvThunk(cont, Sicp.Lang.SvBreakpoint.val(sv)());
+            Env.prototype.getEnvParent = function () {
+                return this.envParent;
             };
-            return BreakpointEvaluator;
+            Env.prototype.get = function (name) {
+                if (name in this.obj)
+                    return this.obj[name];
+                if (this.envParent == null)
+                    throw "no binding for " + name;
+                return this.envParent.get(name);
+            };
+            Env.prototype.set = function (name, rv) {
+                if (name in this.obj)
+                    this.obj[name] = rv;
+                else if (this.envParent == null)
+                    throw name + " is not declared";
+                else
+                    this.envParent.set(name, rv);
+            };
+            Env.prototype.define = function (name, value) {
+                if (name in this.obj)
+                    throw name + ' is already defined';
+                this.obj[name] = value;
+            };
+            Env.prototype.setOrDefine = function (name, value) {
+                this.obj[name] = value;
+            };
+            return Env;
         })();
-        Evaluator.BreakpointEvaluator = BreakpointEvaluator;
-    })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
-})(Sicp || (Sicp = {}));
-var Sicp;
-(function (Sicp) {
-    var Evaluator;
-    (function (Evaluator) {
-        var CallCCEvaluator = (function () {
-            function CallCCEvaluator(evaluator) {
-                this.evaluator = evaluator;
-            }
-            CallCCEvaluator.prototype.matches = function (sv) {
-                return Evaluator.BaseEvaluator.isTaggedList(sv, 'call-with-current-continuation');
-            };
-            CallCCEvaluator.prototype.evaluate = function (sv, env, cont) {
-                var _this = this;
-                /* (call-with-current-continuation (lambda (hop) ...)) */
-                return this.evaluator.evaluate(this.getLambda(sv), env, function (lambda) {
-                    var args = Sicp.Lang.SvCons.listFromRvs(CallCCEvaluator.createCcProcedure(cont));
-                    return Evaluator.ApplicationEvaluator.evalCall(lambda, args, cont, _this.evaluator);
-                });
-            };
-            CallCCEvaluator.prototype.getLambda = function (sv) { return Sicp.Lang.SvCons.cadr(sv); };
-            CallCCEvaluator.createCcProcedure = function (cont) {
-                return new Sicp.Lang.SvCons(new Sicp.Lang.SvSymbol('captured-continuation'), new Sicp.Lang.SvAny(cont));
-            };
-            return CallCCEvaluator;
-        })();
-        Evaluator.CallCCEvaluator = CallCCEvaluator;
-    })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
+        Lang.Env = Env;
+    })(Lang = Sicp.Lang || (Sicp.Lang = {}));
 })(Sicp || (Sicp = {}));
 var Sicp;
 (function (Sicp) {
@@ -165,153 +358,58 @@ var Sicp;
 (function (Sicp) {
     var Evaluator;
     (function (Evaluator) {
-        var LetEvaluator = (function () {
-            function LetEvaluator(evaluator) {
-                this.evaluator = evaluator;
+        var BaseEvaluator = (function () {
+            function BaseEvaluator() {
+                this.stepCount = 1;
+                this.step = 0;
             }
-            LetEvaluator.prototype.matches = function (node) {
-                return LetEvaluator.isLet(node) || LetEvaluator.isLetStar(node) || LetEvaluator.isLetrec(node);
+            BaseEvaluator.prototype.setEvaluators = function (evaluators) {
+                this.evaluators = evaluators;
             };
-            LetEvaluator.prototype.evaluate = function (sv, env, cont) {
+            BaseEvaluator.prototype.setStepCount = function (stepCount) {
+                this.stepCount = stepCount;
+                this.step = 0;
+            };
+            BaseEvaluator.prototype.matches = function (node) {
+                return true;
+            };
+            BaseEvaluator.prototype.evaluate = function (sv, env, cont) {
                 var _this = this;
-                if (LetEvaluator.isLet(sv)) {
-                    var loop = function (letEnv, defs) {
-                        if (Sicp.Lang.SvCons.isNil(defs))
-                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
-                        var def = Sicp.Lang.SvCons.car(defs);
-                        var svSymbol = Sicp.Lang.SvCons.car(def);
-                        return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), env, function (svValue) {
-                            letEnv.define(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
-                            return loop(letEnv, Sicp.Lang.SvCons.cdr(defs));
-                        });
-                    };
-                    return loop(new Sicp.Lang.Env(env), LetEvaluator.getDefs(sv));
-                }
-                else if (LetEvaluator.isLetStar(sv)) {
-                    var loop = function (letEnv, defs) {
-                        if (Sicp.Lang.SvCons.isNil(defs))
-                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
-                        var def = Sicp.Lang.SvCons.car(defs);
-                        var svSymbol = Sicp.Lang.SvCons.car(def);
-                        return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), letEnv, function (svValue) {
-                            letEnv = new Sicp.Lang.Env(letEnv);
-                            letEnv.setOrDefine(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
-                            return loop(letEnv, Sicp.Lang.SvCons.cdr(defs));
-                        });
-                    };
-                    return loop(env, LetEvaluator.getDefs(sv));
-                }
-                else if (LetEvaluator.isLetrec(sv)) {
-                    var newEnv = new Sicp.Lang.Env(env);
-                    var defsT = LetEvaluator.getDefs(sv);
-                    while (!Sicp.Lang.SvCons.isNil(defsT)) {
-                        var def = Sicp.Lang.SvCons.car(defsT);
-                        newEnv.define(Sicp.Lang.SvSymbol.val(Sicp.Lang.SvCons.car(def)), Sicp.Lang.SvCons.Nil);
-                        defsT = Sicp.Lang.SvCons.cdr(defsT);
+                for (var i = 0; i < this.evaluators.length; i++) {
+                    if (this.evaluators[i].matches(sv)) {
+                        this.step++;
+                        if (this.step % this.stepCount == 0)
+                            return new Sicp.Lang.SvBreakpoint(function () { return _this.evaluators[i].evaluate(sv, env, cont); }, env).withSourceInfo(sv, sv);
+                        else
+                            return this.evaluators[i].evaluate(sv, env, cont);
                     }
-                    var loop = function (letEnv, defs) {
-                        if (Sicp.Lang.SvCons.isNil(defs))
-                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
-                        var def = Sicp.Lang.SvCons.car(defs);
-                        var svSymbol = Sicp.Lang.SvCons.car(def);
-                        return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), letEnv, function (svValue) {
-                            letEnv.set(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
-                            return loop(letEnv, Sicp.Lang.SvCons.cdr(defs));
-                        });
-                    };
-                    return loop(newEnv, LetEvaluator.getDefs(sv));
                 }
-                else
-                    throw 'uknown let kind';
+                throw 'cannot evaluate ' + sv.toString();
             };
-            LetEvaluator.isLet = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let'); };
-            LetEvaluator.isLetStar = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let*'); };
-            LetEvaluator.isLetrec = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'letrec'); };
-            LetEvaluator.getDefs = function (sv) {
-                return Sicp.Lang.SvCons.cadr(sv);
+            BaseEvaluator.prototype.evaluateList = function (exprs, env, cont) {
+                var _this = this;
+                var lastSv = Sicp.Lang.SvCons.Nil;
+                var loop = function (exprs) {
+                    if (Sicp.Lang.SvCons.isNil(exprs))
+                        return new Sicp.Lang.SvThunk(cont, lastSv);
+                    return _this.evaluate(Sicp.Lang.SvCons.car(exprs), env, function (sv) {
+                        lastSv = sv;
+                        var nextExprs = Sicp.Lang.SvCons.cdr(exprs);
+                        return loop(nextExprs);
+                    });
+                };
+                return loop(exprs);
             };
-            LetEvaluator.getBody = function (sv) { return Sicp.Lang.SvCons.cddr(sv); };
-            return LetEvaluator;
+            BaseEvaluator.isTaggedList = function (node, tag) {
+                if (!Sicp.Lang.SvCons.matches(node))
+                    return false;
+                var car = Sicp.Lang.SvCons.car(node);
+                return Sicp.Lang.SvSymbol.matches(car) && Sicp.Lang.SvSymbol.val(car) === tag;
+            };
+            return BaseEvaluator;
         })();
-        Evaluator.LetEvaluator = LetEvaluator;
+        Evaluator.BaseEvaluator = BaseEvaluator;
     })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
-})(Sicp || (Sicp = {}));
-var Sicp;
-(function (Sicp) {
-    var Lang;
-    (function (Lang) {
-        var Interpreter = (function () {
-            function Interpreter() {
-            }
-            Interpreter.prototype.evaluateString = function (st, log) {
-                var parser = new Lang.Parser();
-                var exprs = parser.parse(st);
-                var env = new Lang.Env(null);
-                env.define('cons', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvCons(Lang.SvCons.car(args), Lang.SvCons.cadr(args)); })));
-                env.define('null?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvCons.isNil(Lang.SvCons.car(args))); })));
-                env.define('car', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.car(Lang.SvCons.car(args)); })));
-                env.define('cadr', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.cadr(Lang.SvCons.car(args)); })));
-                env.define('cdr', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.cdr(Lang.SvCons.car(args)); })));
-                env.define('=', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) === Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
-                env.define('>', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) > Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
-                env.define('<', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) < Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
-                env.define('*', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) * Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
-                env.define('-', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) - Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
-                env.define('+', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) + Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
-                env.define('/', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) / Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
-                env.define('min', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Math.min(Lang.SvNumber.val(Lang.SvCons.car(args)), Lang.SvNumber.val(Lang.SvCons.cadr(args)))); })));
-                env.define('max', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Math.max(Lang.SvNumber.val(Lang.SvCons.car(args)), Lang.SvNumber.val(Lang.SvCons.cadr(args)))); })));
-                env.define('abs', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Math.abs(Lang.SvNumber.val(Lang.SvCons.car(args)))); })));
-                env.define('zero?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) === 0); })));
-                env.define('length', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.lengthI(Lang.SvCons.car(args)); })));
-                env.define('not', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.not(Lang.SvCons.car(args)); })));
-                env.define('and', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.and(args); })));
-                env.define('or', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.or(args); })));
-                env.define('display', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) {
-                    while (!Lang.SvCons.isNil(args)) {
-                        log(Lang.SvCons.car(args).toDisplayString());
-                        args = Lang.SvCons.cdr(args);
-                    }
-                    return Lang.SvCons.Nil;
-                })));
-                env.define('newline', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) {
-                    log('\n');
-                    return Lang.SvCons.Nil;
-                })));
-                this.evaluator = new Sicp.Evaluator.BaseEvaluator();
-                this.evaluator.setEvaluators([
-                    new Sicp.Evaluator.BreakpointEvaluator(this.evaluator),
-                    new Sicp.Evaluator.SelfEvaluator(),
-                    new Sicp.Evaluator.VariableEvaluator(),
-                    new Sicp.Evaluator.LetEvaluator(this.evaluator),
-                    new Sicp.Evaluator.QuoteEvaluator(this.evaluator),
-                    new Sicp.Evaluator.CondEvaluator(this.evaluator),
-                    new Sicp.Evaluator.DefineEvaluator(this.evaluator),
-                    new Sicp.Evaluator.AssignmentEvaluator(this.evaluator),
-                    new Sicp.Evaluator.IfEvaluator(this.evaluator),
-                    new Sicp.Evaluator.BeginEvaluator(this.evaluator),
-                    new Sicp.Evaluator.LambdaEvaluator(this.evaluator),
-                    new Sicp.Evaluator.CallCCEvaluator(this.evaluator),
-                    new Sicp.Evaluator.ApplicationEvaluator(this.evaluator)
-                ]);
-                return this.evaluator.evaluateList(exprs, new Lang.Env(env), function (sv) {
-                    //log(sv.toString());
-                    return sv;
-                });
-            };
-            Interpreter.prototype.step = function (sv, stepCount) {
-                this.evaluator.setStepCount(stepCount);
-                if (Lang.SvBreakpoint.matches(sv)) {
-                    sv = Lang.SvBreakpoint.val(sv)();
-                    while (Lang.SvThunk.matches(sv))
-                        sv = Lang.SvThunk.call(sv);
-                }
-                return Lang.SvBreakpoint.matches(sv) ? sv : null;
-            };
-            return Interpreter;
-        })();
-        Lang.Interpreter = Interpreter;
-    })(Lang = Sicp.Lang || (Sicp.Lang = {}));
 })(Sicp || (Sicp = {}));
 var Sicp;
 (function (Sicp) {
@@ -331,6 +429,53 @@ var Sicp;
             return BeginEvaluator;
         })();
         Evaluator.BeginEvaluator = BeginEvaluator;
+    })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
+})(Sicp || (Sicp = {}));
+var Sicp;
+(function (Sicp) {
+    var Evaluator;
+    (function (Evaluator) {
+        var BreakpointEvaluator = (function () {
+            function BreakpointEvaluator(evaluator) {
+                this.evaluator = evaluator;
+            }
+            BreakpointEvaluator.prototype.matches = function (sv) {
+                return Sicp.Lang.SvBreakpoint.matches(sv);
+            };
+            BreakpointEvaluator.prototype.evaluate = function (sv, env, cont) {
+                return new Sicp.Lang.SvThunk(cont, Sicp.Lang.SvBreakpoint.val(sv)());
+            };
+            return BreakpointEvaluator;
+        })();
+        Evaluator.BreakpointEvaluator = BreakpointEvaluator;
+    })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
+})(Sicp || (Sicp = {}));
+var Sicp;
+(function (Sicp) {
+    var Evaluator;
+    (function (Evaluator) {
+        var CallCCEvaluator = (function () {
+            function CallCCEvaluator(evaluator) {
+                this.evaluator = evaluator;
+            }
+            CallCCEvaluator.prototype.matches = function (sv) {
+                return Evaluator.BaseEvaluator.isTaggedList(sv, 'call-with-current-continuation');
+            };
+            CallCCEvaluator.prototype.evaluate = function (sv, env, cont) {
+                var _this = this;
+                /* (call-with-current-continuation (lambda (hop) ...)) */
+                return this.evaluator.evaluate(this.getLambda(sv), env, function (lambda) {
+                    var args = Sicp.Lang.SvCons.listFromRvs(CallCCEvaluator.createCcProcedure(cont));
+                    return Evaluator.ApplicationEvaluator.evalCall(lambda, args, cont, _this.evaluator);
+                });
+            };
+            CallCCEvaluator.prototype.getLambda = function (sv) { return Sicp.Lang.SvCons.cadr(sv); };
+            CallCCEvaluator.createCcProcedure = function (cont) {
+                return new Sicp.Lang.SvCons(new Sicp.Lang.SvSymbol('captured-continuation'), new Sicp.Lang.SvAny(cont));
+            };
+            return CallCCEvaluator;
+        })();
+        Evaluator.CallCCEvaluator = CallCCEvaluator;
     })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
 })(Sicp || (Sicp = {}));
 var Sicp;
@@ -412,112 +557,6 @@ var Sicp;
 })(Sicp || (Sicp = {}));
 var Sicp;
 (function (Sicp) {
-    var Lang;
-    (function (Lang) {
-        var Env = (function () {
-            function Env(envParent) {
-                this.obj = {};
-                this.envParent = null;
-                this.envParent = envParent;
-            }
-            Env.prototype.getNames = function () {
-                var res = [];
-                for (var key in this.obj) {
-                    if (this.obj.hasOwnProperty(key))
-                        res.push(key);
-                }
-                return res;
-            };
-            Env.prototype.getEnvParent = function () {
-                return this.envParent;
-            };
-            Env.prototype.get = function (name) {
-                if (name in this.obj)
-                    return this.obj[name];
-                if (this.envParent == null)
-                    throw "no binding for " + name;
-                return this.envParent.get(name);
-            };
-            Env.prototype.set = function (name, rv) {
-                if (name in this.obj)
-                    this.obj[name] = rv;
-                else if (this.envParent == null)
-                    throw name + " is not declared";
-                else
-                    this.envParent.set(name, rv);
-            };
-            Env.prototype.define = function (name, value) {
-                if (name in this.obj)
-                    throw name + ' is already defined';
-                this.obj[name] = value;
-            };
-            Env.prototype.setOrDefine = function (name, value) {
-                this.obj[name] = value;
-            };
-            return Env;
-        })();
-        Lang.Env = Env;
-    })(Lang = Sicp.Lang || (Sicp.Lang = {}));
-})(Sicp || (Sicp = {}));
-var Sicp;
-(function (Sicp) {
-    var Evaluator;
-    (function (Evaluator) {
-        var BaseEvaluator = (function () {
-            function BaseEvaluator() {
-                this.stepCount = 1;
-                this.step = 0;
-            }
-            BaseEvaluator.prototype.setEvaluators = function (evaluators) {
-                this.evaluators = evaluators;
-            };
-            BaseEvaluator.prototype.setStepCount = function (stepCount) {
-                this.stepCount = stepCount;
-                this.step = 0;
-            };
-            BaseEvaluator.prototype.matches = function (node) {
-                return true;
-            };
-            BaseEvaluator.prototype.evaluate = function (sv, env, cont) {
-                var _this = this;
-                for (var i = 0; i < this.evaluators.length; i++) {
-                    if (this.evaluators[i].matches(sv)) {
-                        this.step++;
-                        if (this.step % this.stepCount == 0)
-                            return new Sicp.Lang.SvBreakpoint(function () { return _this.evaluators[i].evaluate(sv, env, cont); }, env).withSourceInfo(sv, sv);
-                        else
-                            return this.evaluators[i].evaluate(sv, env, cont);
-                    }
-                }
-                throw 'cannot evaluate ' + sv.toString();
-            };
-            BaseEvaluator.prototype.evaluateList = function (exprs, env, cont) {
-                var _this = this;
-                var lastSv = Sicp.Lang.SvCons.Nil;
-                var loop = function (exprs) {
-                    if (Sicp.Lang.SvCons.isNil(exprs))
-                        return new Sicp.Lang.SvThunk(cont, lastSv);
-                    return _this.evaluate(Sicp.Lang.SvCons.car(exprs), env, function (sv) {
-                        lastSv = sv;
-                        var nextExprs = Sicp.Lang.SvCons.cdr(exprs);
-                        return loop(nextExprs);
-                    });
-                };
-                return loop(exprs);
-            };
-            BaseEvaluator.isTaggedList = function (node, tag) {
-                if (!Sicp.Lang.SvCons.matches(node))
-                    return false;
-                var car = Sicp.Lang.SvCons.car(node);
-                return Sicp.Lang.SvSymbol.matches(car) && Sicp.Lang.SvSymbol.val(car) === tag;
-            };
-            return BaseEvaluator;
-        })();
-        Evaluator.BaseEvaluator = BaseEvaluator;
-    })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
-})(Sicp || (Sicp = {}));
-var Sicp;
-(function (Sicp) {
     var Evaluator;
     (function (Evaluator) {
         var IfEvaluator = (function () {
@@ -566,6 +605,81 @@ var Sicp;
             return LambdaEvaluator;
         })();
         Evaluator.LambdaEvaluator = LambdaEvaluator;
+    })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
+})(Sicp || (Sicp = {}));
+var Sicp;
+(function (Sicp) {
+    var Evaluator;
+    (function (Evaluator) {
+        var LetEvaluator = (function () {
+            function LetEvaluator(evaluator) {
+                this.evaluator = evaluator;
+            }
+            LetEvaluator.prototype.matches = function (node) {
+                return LetEvaluator.isLet(node) || LetEvaluator.isLetStar(node) || LetEvaluator.isLetrec(node);
+            };
+            LetEvaluator.prototype.evaluate = function (sv, env, cont) {
+                var _this = this;
+                if (LetEvaluator.isLet(sv)) {
+                    var loop = function (letEnv, defs) {
+                        if (Sicp.Lang.SvCons.isNil(defs))
+                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
+                        var def = Sicp.Lang.SvCons.car(defs);
+                        var svSymbol = Sicp.Lang.SvCons.car(def);
+                        return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), env, function (svValue) {
+                            letEnv.define(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
+                            return loop(letEnv, Sicp.Lang.SvCons.cdr(defs));
+                        });
+                    };
+                    return loop(new Sicp.Lang.Env(env), LetEvaluator.getDefs(sv));
+                }
+                else if (LetEvaluator.isLetStar(sv)) {
+                    var loop = function (letEnv, defs) {
+                        if (Sicp.Lang.SvCons.isNil(defs))
+                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
+                        var def = Sicp.Lang.SvCons.car(defs);
+                        var svSymbol = Sicp.Lang.SvCons.car(def);
+                        return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), letEnv, function (svValue) {
+                            letEnv = new Sicp.Lang.Env(letEnv);
+                            letEnv.setOrDefine(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
+                            return loop(letEnv, Sicp.Lang.SvCons.cdr(defs));
+                        });
+                    };
+                    return loop(env, LetEvaluator.getDefs(sv));
+                }
+                else if (LetEvaluator.isLetrec(sv)) {
+                    var newEnv = new Sicp.Lang.Env(env);
+                    var defsT = LetEvaluator.getDefs(sv);
+                    while (!Sicp.Lang.SvCons.isNil(defsT)) {
+                        var def = Sicp.Lang.SvCons.car(defsT);
+                        newEnv.define(Sicp.Lang.SvSymbol.val(Sicp.Lang.SvCons.car(def)), Sicp.Lang.SvCons.Nil);
+                        defsT = Sicp.Lang.SvCons.cdr(defsT);
+                    }
+                    var loop = function (letEnv, defs) {
+                        if (Sicp.Lang.SvCons.isNil(defs))
+                            return _this.evaluator.evaluateList(LetEvaluator.getBody(sv), letEnv, cont);
+                        var def = Sicp.Lang.SvCons.car(defs);
+                        var svSymbol = Sicp.Lang.SvCons.car(def);
+                        return _this.evaluator.evaluate(Sicp.Lang.SvCons.cadr(def), letEnv, function (svValue) {
+                            letEnv.set(Sicp.Lang.SvSymbol.val(svSymbol), svValue);
+                            return loop(letEnv, Sicp.Lang.SvCons.cdr(defs));
+                        });
+                    };
+                    return loop(newEnv, LetEvaluator.getDefs(sv));
+                }
+                else
+                    throw 'uknown let kind';
+            };
+            LetEvaluator.isLet = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let'); };
+            LetEvaluator.isLetStar = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'let*'); };
+            LetEvaluator.isLetrec = function (node) { return Evaluator.BaseEvaluator.isTaggedList(node, 'letrec'); };
+            LetEvaluator.getDefs = function (sv) {
+                return Sicp.Lang.SvCons.cadr(sv);
+            };
+            LetEvaluator.getBody = function (sv) { return Sicp.Lang.SvCons.cddr(sv); };
+            return LetEvaluator;
+        })();
+        Evaluator.LetEvaluator = LetEvaluator;
     })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
 })(Sicp || (Sicp = {}));
 var Sicp;
@@ -625,6 +739,226 @@ var Sicp;
         })();
         Evaluator.VariableEvaluator = VariableEvaluator;
     })(Evaluator = Sicp.Evaluator || (Sicp.Evaluator = {}));
+})(Sicp || (Sicp = {}));
+var Sicp;
+(function (Sicp) {
+    var Lang;
+    (function (Lang) {
+        var Interpreter = (function () {
+            function Interpreter() {
+            }
+            Interpreter.prototype.evaluateString = function (st, log) {
+                var parser = new Lang.Parser();
+                var exprs = parser.parse(st);
+                var env = new Lang.Env(null);
+                env.define('cons', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvCons(Lang.SvCons.car(args), Lang.SvCons.cadr(args)); })));
+                env.define('null?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvCons.isNil(Lang.SvCons.car(args))); })));
+                env.define('car', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.car(Lang.SvCons.car(args)); })));
+                env.define('cadr', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.cadr(Lang.SvCons.car(args)); })));
+                env.define('cdr', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.cdr(Lang.SvCons.car(args)); })));
+                env.define('=', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) === Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('>', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) > Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('<', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) < Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('*', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) * Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('-', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) - Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('+', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) + Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('/', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Lang.SvNumber.val(Lang.SvCons.car(args)) / Lang.SvNumber.val(Lang.SvCons.cadr(args))); })));
+                env.define('min', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Math.min(Lang.SvNumber.val(Lang.SvCons.car(args)), Lang.SvNumber.val(Lang.SvCons.cadr(args)))); })));
+                env.define('max', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Math.max(Lang.SvNumber.val(Lang.SvCons.car(args)), Lang.SvNumber.val(Lang.SvCons.cadr(args)))); })));
+                env.define('abs', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return new Lang.SvNumber(Math.abs(Lang.SvNumber.val(Lang.SvCons.car(args)))); })));
+                env.define('zero?', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.fromBoolean(Lang.SvNumber.val(Lang.SvCons.car(args)) === 0); })));
+                env.define('length', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvCons.lengthI(Lang.SvCons.car(args)); })));
+                env.define('not', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.not(Lang.SvCons.car(args)); })));
+                env.define('and', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.and(args); })));
+                env.define('or', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) { return Lang.SvBool.or(args); })));
+                env.define('display', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) {
+                    while (!Lang.SvCons.isNil(args)) {
+                        log(Lang.SvCons.car(args).toDisplayString());
+                        args = Lang.SvCons.cdr(args);
+                    }
+                    return Lang.SvCons.Nil;
+                })));
+                env.define('newline', new Lang.SvCons(new Lang.SvSymbol('primitive'), new Lang.SvAny(function (args) {
+                    log('\n');
+                    return Lang.SvCons.Nil;
+                })));
+                this.evaluator = new Sicp.Evaluator.BaseEvaluator();
+                this.evaluator.setEvaluators([
+                    new Sicp.Evaluator.BreakpointEvaluator(this.evaluator),
+                    new Sicp.Evaluator.SelfEvaluator(),
+                    new Sicp.Evaluator.VariableEvaluator(),
+                    new Sicp.Evaluator.LetEvaluator(this.evaluator),
+                    new Sicp.Evaluator.QuoteEvaluator(this.evaluator),
+                    new Sicp.Evaluator.CondEvaluator(this.evaluator),
+                    new Sicp.Evaluator.DefineEvaluator(this.evaluator),
+                    new Sicp.Evaluator.AssignmentEvaluator(this.evaluator),
+                    new Sicp.Evaluator.IfEvaluator(this.evaluator),
+                    new Sicp.Evaluator.BeginEvaluator(this.evaluator),
+                    new Sicp.Evaluator.LambdaEvaluator(this.evaluator),
+                    new Sicp.Evaluator.CallCCEvaluator(this.evaluator),
+                    new Sicp.Evaluator.ApplicationEvaluator(this.evaluator)
+                ]);
+                return this.evaluator.evaluateList(exprs, new Lang.Env(env), function (sv) {
+                    //log(sv.toString());
+                    return sv;
+                });
+            };
+            Interpreter.prototype.step = function (sv, stepCount) {
+                this.evaluator.setStepCount(stepCount);
+                if (Lang.SvBreakpoint.matches(sv)) {
+                    sv = Lang.SvBreakpoint.val(sv)();
+                    while (Lang.SvThunk.matches(sv))
+                        sv = Lang.SvThunk.call(sv);
+                }
+                return Lang.SvBreakpoint.matches(sv) ? sv : null;
+            };
+            return Interpreter;
+        })();
+        Lang.Interpreter = Interpreter;
+    })(Lang = Sicp.Lang || (Sicp.Lang = {}));
+})(Sicp || (Sicp = {}));
+var Sicp;
+(function (Sicp) {
+    var Lang;
+    (function (Lang) {
+        var Parser = (function () {
+            function Parser() {
+                this.regexSymbol = /^[^\s()',]+/;
+                this.regexNumber = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/;
+                this.regexString = /^"([^\\\"]+|\\.)*"/;
+                this.regexWhiteSpace = /^\s*/;
+                this.regexBoolean = /^#t|^#f/;
+                this.regexComment = /^;.*/;
+                this.itoken = 0;
+            }
+            Parser.prototype.parse = function (st) {
+                this.tokens = this.getTokens(st)
+                    .filter(function (token) { return token.kind !== TokenKind.WhiteSpace && token.kind !== TokenKind.Comment; });
+                var lastToken = this.tokens.length ? this.tokens[this.tokens.length - 1] : null;
+                this.tokens.push(lastToken ?
+                    new Token(TokenKind.EOF, "", lastToken.ilineEnd, lastToken.icolEnd + 1) :
+                    new Token(TokenKind.EOF, "", 0, 0));
+                this.itoken = 0;
+                var rvs = [];
+                while (!this.accept(TokenKind.EOF))
+                    rvs.push(this.parseExpression());
+                return Lang.SvCons.listFromRvArray(rvs);
+            };
+            Parser.prototype.nextToken = function () {
+                if (this.itoken < this.tokens.length - 1)
+                    this.itoken++;
+            };
+            Parser.prototype.currentToken = function () {
+                return this.tokens[this.itoken];
+            };
+            Parser.prototype.accept = function (tokenKind) {
+                if (this.currentToken().kind === tokenKind) {
+                    this.nextToken();
+                    return true;
+                }
+                return false;
+            };
+            Parser.prototype.expect = function (tokenKind) {
+                if (this.accept(tokenKind))
+                    return true;
+                else
+                    throw 'expected ' + tokenKind + ' found ' + this.currentToken().kind;
+            };
+            Parser.prototype.parseExpression = function () {
+                var token = this.currentToken();
+                if (this.accept(TokenKind.Quote)) {
+                    var svBody = this.parseExpression();
+                    return new Lang.SvCons(new Lang.SvSymbol("quote"), svBody).withSourceInfo(token, svBody);
+                }
+                if (this.accept(TokenKind.Symbol))
+                    return new Lang.SvSymbol(token.st).withSourceInfo(token, token);
+                if (this.accept(TokenKind.BooleanLit))
+                    return Lang.SvBool.fromBoolean(token.st === "#t").withSourceInfo(token, token);
+                if (this.accept(TokenKind.NumberLit))
+                    return new Lang.SvNumber(eval(token.st)).withSourceInfo(token, token);
+                if (this.accept(TokenKind.StringLit))
+                    return new Lang.SvString(eval(token.st)).withSourceInfo(token, token);
+                if (this.accept(TokenKind.LParen)) {
+                    var tokenStart = token;
+                    var exprs = [];
+                    while (!this.accept(TokenKind.RParen)) {
+                        if (this.accept(TokenKind.EOF))
+                            throw "unexpected end of input";
+                        exprs.push(this.parseExpression());
+                    }
+                    var tokenEnd = this.tokens[this.itoken - 1];
+                    return Lang.SvCons.listFromRvArray(exprs).withSourceInfo(tokenStart, tokenEnd);
+                }
+                throw "invalid token " + token;
+            };
+            Parser.prototype.getTokens = function (st) {
+                var tokens = [];
+                var iline = 0;
+                var icol = 0;
+                while (st.length > 0) {
+                    var ch = st[0];
+                    var token = void 0;
+                    if (ch === "(")
+                        token = new Token(TokenKind.LParen, ch, iline, icol);
+                    else if (ch === ")")
+                        token = new Token(TokenKind.RParen, ch, iline, icol);
+                    else if (ch === "'")
+                        token = new Token(TokenKind.Quote, ch, iline, icol);
+                    else if (this.regexNumber.test(st))
+                        token = new Token(TokenKind.NumberLit, this.regexNumber.exec(st)[0], iline, icol);
+                    else if (this.regexString.test(st))
+                        token = new Token(TokenKind.StringLit, this.regexString.exec(st)[0], iline, icol);
+                    else if (this.regexBoolean.test(st))
+                        token = new Token(TokenKind.BooleanLit, this.regexBoolean.exec(st)[0], iline, icol);
+                    else if (this.regexComment.test(st))
+                        token = new Token(TokenKind.Comment, this.regexComment.exec(st)[0], iline, icol);
+                    else if (this.regexSymbol.test(st))
+                        token = new Token(TokenKind.Symbol, this.regexSymbol.exec(st)[0], iline, icol);
+                    else if (this.regexWhiteSpace.test(st))
+                        token = new Token(TokenKind.WhiteSpace, this.regexWhiteSpace.exec(st)[0], iline, icol);
+                    else
+                        throw "invalid token at '" + st + "'";
+                    tokens.push(token);
+                    if (token.st.length === 0)
+                        throw "invalid token";
+                    st = st.substr(token.st.length);
+                    iline = token.ilineEnd;
+                    icol = token.icolEnd;
+                }
+                return tokens;
+            };
+            return Parser;
+        })();
+        Lang.Parser = Parser;
+        var TokenKind;
+        (function (TokenKind) {
+            TokenKind[TokenKind["WhiteSpace"] = 0] = "WhiteSpace";
+            TokenKind[TokenKind["BooleanLit"] = 1] = "BooleanLit";
+            TokenKind[TokenKind["LParen"] = 2] = "LParen";
+            TokenKind[TokenKind["RParen"] = 3] = "RParen";
+            TokenKind[TokenKind["Symbol"] = 4] = "Symbol";
+            TokenKind[TokenKind["NumberLit"] = 5] = "NumberLit";
+            TokenKind[TokenKind["Quote"] = 6] = "Quote";
+            TokenKind[TokenKind["StringLit"] = 7] = "StringLit";
+            TokenKind[TokenKind["Comment"] = 8] = "Comment";
+            TokenKind[TokenKind["EOF"] = 9] = "EOF";
+        })(TokenKind || (TokenKind = {}));
+        var Token = (function () {
+            function Token(kind, st, ilineStart, icolStart) {
+                this.kind = kind;
+                this.st = st;
+                this.ilineStart = ilineStart;
+                this.icolStart = icolStart;
+                var lines = st.replace("\r", "").split('\n');
+                this.ilineEnd = this.ilineStart + lines.length - 1;
+                if (this.ilineStart === this.ilineEnd)
+                    this.icolEnd = icolStart + lines[0].length;
+                else
+                    this.icolEnd = lines[lines.length - 1].length;
+            }
+            return Token;
+        })();
+    })(Lang = Sicp.Lang || (Sicp.Lang = {}));
 })(Sicp || (Sicp = {}));
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -944,330 +1278,5 @@ var Sicp;
             return SvSymbol;
         })(Sv);
         Lang.SvSymbol = SvSymbol;
-    })(Lang = Sicp.Lang || (Sicp.Lang = {}));
-})(Sicp || (Sicp = {}));
-var Editor;
-(function (Editor) {
-    var SicpEditor = (function () {
-        function SicpEditor(editorDiv, outputDiv, variablesDiv, samples) {
-            var _this = this;
-            this.editorDiv = editorDiv;
-            this.outputDiv = outputDiv;
-            this.variablesDiv = variablesDiv;
-            this.samples = samples;
-            this.currentMarker = null;
-            this.currentTimeout = null;
-            this.isRunning = false;
-            this.interpreter = new Sicp.Lang.Interpreter();
-            require(['ace/ace'], function (ace) {
-                _this.Range = ace.require("ace/range").Range;
-                var divToolbar = document.createElement('div');
-                divToolbar.classList.add("sicp-editor-toolbar");
-                editorDiv.appendChild(divToolbar);
-                _this.btnRun = document.createElement('button');
-                _this.btnRun.classList.add("sicp-editor-button");
-                _this.btnRun.innerHTML = "run";
-                _this.btnRun.onclick = function () { return _this.run(); };
-                divToolbar.appendChild(_this.btnRun);
-                _this.btnBreak = document.createElement('button');
-                _this.btnBreak.classList.add("sicp-editor-button");
-                _this.btnBreak.innerHTML = "break";
-                _this.btnBreak.onclick = function () { return _this.break(); };
-                divToolbar.appendChild(_this.btnBreak);
-                _this.btnStop = document.createElement('button');
-                _this.btnStop.classList.add("sicp-editor-button");
-                _this.btnStop.innerHTML = "stop";
-                _this.btnStop.onclick = function () { return _this.stop(); };
-                divToolbar.appendChild(_this.btnStop);
-                _this.btnStep = document.createElement('button');
-                _this.btnStep.classList.add("sicp-editor-button");
-                _this.btnStep.innerHTML = "step";
-                _this.btnStep.onclick = function () { return _this.step(); };
-                divToolbar.appendChild(_this.btnStep);
-                _this.btnContinue = document.createElement('button');
-                _this.btnContinue.classList.add("sicp-editor-button");
-                _this.btnContinue.innerHTML = "continue";
-                _this.btnContinue.onclick = function () { return _this.continue(); };
-                divToolbar.appendChild(_this.btnContinue);
-                var editorWindow = document.createElement('div');
-                editorWindow.classList.add("editorWindow");
-                editorDiv.appendChild(editorWindow);
-                _this.outputElement = outputDiv;
-                _this.variablesElement = variablesDiv;
-                _this.editor = ace.edit(editorWindow);
-                _this.editor.setTheme('ace/theme/chrome');
-                _this.editor.getSession().setMode('ace/mode/sicp');
-                if (samples) {
-                    var selectSample = document.createElement('select');
-                    selectSample.classList.add("sicp-editor-select-sample");
-                    divToolbar.appendChild(selectSample);
-                    samples.forEach(function (sample) {
-                        var option = document.createElement('option');
-                        option.text = sample.split('\n')[0].trim();
-                        option.text = option.text.replace(/^; /, '');
-                        option.value = sample;
-                        selectSample.appendChild(option);
-                    });
-                    selectSample.onchange = function () {
-                        _this.stop();
-                        _this.editor.setValue(selectSample.options[selectSample.selectedIndex].value, -1);
-                    };
-                    selectSample.onchange(null);
-                }
-                _this.updateUI();
-            });
-        }
-        SicpEditor.prototype.clearOutput = function () {
-            this.outputElement.innerHTML = "";
-        };
-        SicpEditor.prototype.log = function (st) {
-            st = st.replace('\n', '<br />');
-            this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + st;
-        };
-        SicpEditor.prototype.setMarker = function (sv) {
-            this.clearMarker();
-            if (sv) {
-                this.currentMarker = this.editor.getSession().addMarker(new this.Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
-                this.editor.gotoLine(sv.ilineStart);
-            }
-        };
-        SicpEditor.prototype.clearMarker = function () {
-            if (this.currentMarker !== null)
-                this.editor.getSession().removeMarker(this.currentMarker);
-        };
-        SicpEditor.prototype.updateUI = function () {
-            this.editor.setReadOnly(this.sv != null);
-            this.btnRun.style.display = this.sv == null ? "inline" : "none";
-            this.btnBreak.style.display = this.isRunning ? "inline" : "none";
-            this.btnContinue.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
-            this.btnStop.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
-            this.btnStep.style.display = !this.isRunning ? "inline" : "none";
-            this.showVariables();
-        };
-        SicpEditor.prototype.showVariables = function () {
-            var _this = this;
-            this.variablesElement.innerHTML = "";
-            if (this.isRunning)
-                return;
-            var env = this.env;
-            while (env) {
-                (function (self) {
-                    var divScope = document.createElement('div');
-                    var pTitle = document.createElement('p');
-                    pTitle.classList.add('sicp-tree-node-title');
-                    $(pTitle).click(function () { $(divScope).toggleClass('sicp-tree-node-collapsed'); });
-                    pTitle.innerHTML = 'scope';
-                    var table = document.createElement('table');
-                    table.classList.add('sicp-tree-node-content');
-                    divScope.appendChild(pTitle);
-                    divScope.appendChild(table);
-                    self.variablesElement.appendChild(divScope);
-                    env.getNames().forEach(function (name) {
-                        var tr = document.createElement('tr');
-                        table.appendChild(tr);
-                        var td1 = document.createElement('td');
-                        td1.classList.add('sicp-variable-name');
-                        td1.innerHTML = name;
-                        var td2 = document.createElement('td');
-                        td1.classList.add('sicp-variable-value');
-                        td2.innerHTML = _this.env.get(name).toString();
-                        tr.appendChild(td1);
-                        tr.appendChild(td2);
-                    });
-                })(this);
-                env = env.getEnvParent();
-            }
-        };
-        SicpEditor.prototype.step = function () {
-            this.clearMarker();
-            try {
-                if (!this.sv)
-                    this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
-                else
-                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 10000 : 1);
-            }
-            catch (ex) {
-                this.log(ex);
-                this.sv = null;
-            }
-            if (this.sv == null) {
-                this.isRunning = false;
-                this.env = null;
-            }
-            else {
-                this.env = Sicp.Lang.SvBreakpoint.env(this.sv);
-            }
-            if (!this.isRunning) {
-                this.setMarker(this.sv);
-            }
-            else
-                this.currentTimeout = window.setTimeout(this.step.bind(this), 1);
-            this.updateUI();
-        };
-        SicpEditor.prototype.stop = function () {
-            this.sv = null;
-            this.env = null;
-            this.isRunning = false;
-            this.clearMarker();
-            this.clearOutput();
-            clearTimeout(this.currentTimeout);
-            this.updateUI();
-        };
-        SicpEditor.prototype.run = function () {
-            this.stop();
-            this.continue();
-        };
-        SicpEditor.prototype.continue = function () {
-            this.isRunning = true;
-            this.step();
-        };
-        SicpEditor.prototype.break = function () {
-            this.isRunning = false;
-        };
-        return SicpEditor;
-    })();
-    Editor.SicpEditor = SicpEditor;
-})(Editor || (Editor = {}));
-var Sicp;
-(function (Sicp) {
-    var Lang;
-    (function (Lang) {
-        var Parser = (function () {
-            function Parser() {
-                this.regexSymbol = /^[^\s()',]+/;
-                this.regexNumber = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/;
-                this.regexString = /^"([^\\\"]+|\\.)*"/;
-                this.regexWhiteSpace = /^\s*/;
-                this.regexBoolean = /^#t|^#f/;
-                this.regexComment = /^;.*/;
-                this.itoken = 0;
-            }
-            Parser.prototype.parse = function (st) {
-                this.tokens = this.getTokens(st)
-                    .filter(function (token) { return token.kind !== TokenKind.WhiteSpace && token.kind !== TokenKind.Comment; });
-                var lastToken = this.tokens.length ? this.tokens[this.tokens.length - 1] : null;
-                this.tokens.push(lastToken ?
-                    new Token(TokenKind.EOF, "", lastToken.ilineEnd, lastToken.icolEnd + 1) :
-                    new Token(TokenKind.EOF, "", 0, 0));
-                this.itoken = 0;
-                var rvs = [];
-                while (!this.accept(TokenKind.EOF))
-                    rvs.push(this.parseExpression());
-                return Lang.SvCons.listFromRvArray(rvs);
-            };
-            Parser.prototype.nextToken = function () {
-                if (this.itoken < this.tokens.length - 1)
-                    this.itoken++;
-            };
-            Parser.prototype.currentToken = function () {
-                return this.tokens[this.itoken];
-            };
-            Parser.prototype.accept = function (tokenKind) {
-                if (this.currentToken().kind === tokenKind) {
-                    this.nextToken();
-                    return true;
-                }
-                return false;
-            };
-            Parser.prototype.expect = function (tokenKind) {
-                if (this.accept(tokenKind))
-                    return true;
-                else
-                    throw 'expected ' + tokenKind + ' found ' + this.currentToken().kind;
-            };
-            Parser.prototype.parseExpression = function () {
-                var token = this.currentToken();
-                if (this.accept(TokenKind.Quote)) {
-                    var svBody = this.parseExpression();
-                    return new Lang.SvCons(new Lang.SvSymbol("quote"), svBody).withSourceInfo(token, svBody);
-                }
-                if (this.accept(TokenKind.Symbol))
-                    return new Lang.SvSymbol(token.st).withSourceInfo(token, token);
-                if (this.accept(TokenKind.BooleanLit))
-                    return Lang.SvBool.fromBoolean(token.st === "#t").withSourceInfo(token, token);
-                if (this.accept(TokenKind.NumberLit))
-                    return new Lang.SvNumber(eval(token.st)).withSourceInfo(token, token);
-                if (this.accept(TokenKind.StringLit))
-                    return new Lang.SvString(eval(token.st)).withSourceInfo(token, token);
-                if (this.accept(TokenKind.LParen)) {
-                    var tokenStart = token;
-                    var exprs = [];
-                    while (!this.accept(TokenKind.RParen)) {
-                        if (this.accept(TokenKind.EOF))
-                            throw "unexpected end of input";
-                        exprs.push(this.parseExpression());
-                    }
-                    var tokenEnd = this.tokens[this.itoken - 1];
-                    return Lang.SvCons.listFromRvArray(exprs).withSourceInfo(tokenStart, tokenEnd);
-                }
-                throw "invalid token " + token;
-            };
-            Parser.prototype.getTokens = function (st) {
-                var tokens = [];
-                var iline = 0;
-                var icol = 0;
-                while (st.length > 0) {
-                    var ch = st[0];
-                    var token = void 0;
-                    if (ch === "(")
-                        token = new Token(TokenKind.LParen, ch, iline, icol);
-                    else if (ch === ")")
-                        token = new Token(TokenKind.RParen, ch, iline, icol);
-                    else if (ch === "'")
-                        token = new Token(TokenKind.Quote, ch, iline, icol);
-                    else if (this.regexNumber.test(st))
-                        token = new Token(TokenKind.NumberLit, this.regexNumber.exec(st)[0], iline, icol);
-                    else if (this.regexString.test(st))
-                        token = new Token(TokenKind.StringLit, this.regexString.exec(st)[0], iline, icol);
-                    else if (this.regexBoolean.test(st))
-                        token = new Token(TokenKind.BooleanLit, this.regexBoolean.exec(st)[0], iline, icol);
-                    else if (this.regexComment.test(st))
-                        token = new Token(TokenKind.Comment, this.regexComment.exec(st)[0], iline, icol);
-                    else if (this.regexSymbol.test(st))
-                        token = new Token(TokenKind.Symbol, this.regexSymbol.exec(st)[0], iline, icol);
-                    else if (this.regexWhiteSpace.test(st))
-                        token = new Token(TokenKind.WhiteSpace, this.regexWhiteSpace.exec(st)[0], iline, icol);
-                    else
-                        throw "invalid token at '" + st + "'";
-                    tokens.push(token);
-                    if (token.st.length === 0)
-                        throw "invalid token";
-                    st = st.substr(token.st.length);
-                    iline = token.ilineEnd;
-                    icol = token.icolEnd;
-                }
-                return tokens;
-            };
-            return Parser;
-        })();
-        Lang.Parser = Parser;
-        var TokenKind;
-        (function (TokenKind) {
-            TokenKind[TokenKind["WhiteSpace"] = 0] = "WhiteSpace";
-            TokenKind[TokenKind["BooleanLit"] = 1] = "BooleanLit";
-            TokenKind[TokenKind["LParen"] = 2] = "LParen";
-            TokenKind[TokenKind["RParen"] = 3] = "RParen";
-            TokenKind[TokenKind["Symbol"] = 4] = "Symbol";
-            TokenKind[TokenKind["NumberLit"] = 5] = "NumberLit";
-            TokenKind[TokenKind["Quote"] = 6] = "Quote";
-            TokenKind[TokenKind["StringLit"] = 7] = "StringLit";
-            TokenKind[TokenKind["Comment"] = 8] = "Comment";
-            TokenKind[TokenKind["EOF"] = 9] = "EOF";
-        })(TokenKind || (TokenKind = {}));
-        var Token = (function () {
-            function Token(kind, st, ilineStart, icolStart) {
-                this.kind = kind;
-                this.st = st;
-                this.ilineStart = ilineStart;
-                this.icolStart = icolStart;
-                var lines = st.replace("\r", "").split('\n');
-                this.ilineEnd = this.ilineStart + lines.length - 1;
-                if (this.ilineStart === this.ilineEnd)
-                    this.icolEnd = icolStart + lines[0].length;
-                else
-                    this.icolEnd = lines[lines.length - 1].length;
-            }
-            return Token;
-        })();
     })(Lang = Sicp.Lang || (Sicp.Lang = {}));
 })(Sicp || (Sicp = {}));
