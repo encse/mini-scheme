@@ -11,7 +11,7 @@ module Sicp.Evaluator {
 
             if (Lang.SvCons.matches(this.getHead(sv))) {
                 //implicit lambda definition
-                var lambda = LambdaEvaluator.createCompoundProcedure(this.getLambdaParameters(sv), this.getLambdaBody(sv), env);
+                var lambda = LambdaEvaluator.createCompoundProcedure(<Lang.SvSymbol>this.getFunctionName(sv), this.getLambdaParameters(sv), this.getLambdaBody(sv), env);
                 env.define(
                     Lang.SvSymbol.val(this.getFunctionName(sv)),
                     lambda);

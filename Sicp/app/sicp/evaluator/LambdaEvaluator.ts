@@ -9,15 +9,17 @@ module Sicp.Evaluator {
 
         public evaluate(sv: Lang.Sv, env: Lang.Env, cont: Lang.Cont): Lang.Sv {
             var proc = LambdaEvaluator.createCompoundProcedure(
+                new Lang.SvSymbol("lambda"),
                 LambdaEvaluator.getLambdaParameters(sv),
                 LambdaEvaluator.getLambdaBody(sv),
                 env);
             return new Lang.SvThunk(cont, proc);
         }
 
-        public static createCompoundProcedure(params: Lang.Sv, body: Lang.Sv, env: Lang.Env):Lang.Sv {
+        public static createCompoundProcedure(name:Lang.SvSymbol, params: Lang.Sv, body: Lang.Sv, env: Lang.Env):Lang.Sv {
             return Lang.SvCons.listFromRvs(
                 new Lang.SvSymbol('procedure'),
+                name,
                 params,
                 body,
                 new Lang.SvAny(env));

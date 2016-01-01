@@ -4,16 +4,15 @@
 ; once to generate a "return" continuation as in the first example 
 ; and once to suspend an iteration through a list of items:
 
- (define for-each 
-    (lambda (dg lst)
+ (define (for-each dg lst)
         (cond 
             ((null? lst) ())
             (else 
                 (dg (car lst))
-                (for-each dg (cdr lst))))))
+                (for-each dg (cdr lst)))))
 
-(define generate-one-element-at-a-time (lambda (lst)
-  (define control-state (lambda (return)
+(define (generate-one-element-at-a-time lst)
+  (define (control-state return)
     (for-each 
         (lambda (element)
             (set! return (call-with-current-continuation
@@ -21,12 +20,12 @@
                    (set! control-state resume-here)
                    (return element)))))
         lst)
-    (return 'you-fell-off-the-end)))
+    (return 'you-fell-off-the-end))
   
-  (define generator (lambda()
-    (call-with-current-continuation control-state)))
+  (define (generator)
+    (call-with-current-continuation control-state))
  
-  generator))
+  generator)
   
   
 (define generate-digit

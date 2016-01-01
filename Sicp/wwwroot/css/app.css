@@ -126,28 +126,45 @@ body {
 	border-bottom: 1px solid lightgray;
 	margin: 0;
 	padding: 0;
-	display: flex;
-	flex-direction: column;
+	position: relative;
+	background: #f3f3f3;
 
+	margin: 0;
 }
-
+.sicp-box-tab, .sicp-box-tab-title {
+	display: inline-block;
+	margin: 0;
+	padding: 0;
+}
 .sicp-box:last-child {
 	border-right: 1px solid lightgray;
 }
 
-.sicp-box-title {
-	background: #f3f3f3;
-	padding: 4px;
-	font-size: 12px;
-	margin: 0;
-	flex-shrink: 0;
-	border-bottom: 1px solid #dadada;
+.sicp-box-tab-title {
+	height: 30px;
+	border: 1px solid lightgray;
+	border-bottom: none;
+	padding: 6px;
+	margin: 4px 0 0 4px;
+	cursor: default;
 }
 
-
-.sicp-box-content {
+.sicp-box-tab-content {
 	overflow-y: scroll;
-	flex-grow: 1;
+	position: absolute;
+	border-top: 1px solid lightgray; 
+	top: 30px;
+	left:0;
+	right: 0;
+	bottom: 0;
+	background: white;
+	display: none;
+}
+.sicp-box-current-tab .sicp-box-tab-title {
+	background: white;
+}
+.sicp-box-current-tab .sicp-box-tab-content {
+	display: block;
 }
 
 .sicp-tree-node-title {
@@ -181,12 +198,12 @@ body {
 	text-align: center;
 	color: #777777;
 }
-#output {
-	width: 60%;
+#bottom-left-box {
+	width: 70%;
 }
 
-#variables {
-	width: 40%;
+#bottom-right-box{
+	width: 30%;
 }
 
 #variables table {
@@ -207,4 +224,21 @@ body {
 #variables td {
 	vertical-align: top;
 	padding: 2px;
+}
+.sicp-stack-frame {
+	margin: 0;
+	padding: 4px;
+}
+.sicp-stack-frame p{
+	display: block;
+	margin: 0;
+	padding: 0;
+}
+
+.sicp-stack-frame:nth-child(even) {
+	background: white;
+}
+
+.sicp-stack-frame:nth-child(odd) {
+	background: #ebebeb;
 }

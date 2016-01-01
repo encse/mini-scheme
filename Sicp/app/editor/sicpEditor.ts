@@ -4,6 +4,7 @@
         editor: AceAjax.Editor;
         outputElement: HTMLElement;
         variablesElement: HTMLElement;
+        stackTraceElement: HTMLElement;
         currentMarker = null;
         currentTimeout = null;
         btnRun: HTMLButtonElement;
@@ -18,7 +19,8 @@
         interpreter = new Sicp.Lang.Interpreter();
         Range: any;
 
-        constructor(private editorDiv: HTMLElement, private outputDiv:HTMLElement, private variablesDiv:HTMLElement, private samples:string[]) {
+        constructor(private editorDiv: HTMLElement, private outputDiv: HTMLElement, private variablesDiv: HTMLElement,
+            private stackTraceDiv: HTMLElement, private samples: string[]) {
            
             require(['ace/ace'], (ace) => {
                 this.Range = ace.require("ace/range").Range;
@@ -64,6 +66,7 @@
 
                 this.outputElement = outputDiv;
                 this.variablesElement = variablesDiv;
+                this.stackTraceElement = stackTraceDiv;
 
                 this.editor = ace.edit(editorWindow);
                 this.editor.setTheme('ace/theme/chrome');
@@ -88,6 +91,14 @@
                     selectSample.onchange(null);
                 }
 
+                $('.sicp-box').each((_, box) => {
+                    $(box).children('.sicp-box-tab').each((__, tab) => {
+                        $(tab).children('.sicp-box-tab-title').click(() => {
+                            $(box).children('.sicp-box-tab').removeClass('sicp-box-current-tab');
+                            $(tab).addClass('sicp-box-current-tab');
+                        });
+                    });
+                });
 
                 this.updateUI();
             });
@@ -123,10 +134,35 @@
             this.btnStop.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
             this.btnStep.style.display = !this.isRunning ? "inline" : "none";
 
+            this.showStackTrace();
             this.showVariables();
 
         }
+        showStackTrace() {
+            this.stackTraceElement.innerHTML = "";
 
+            if (this.isRunning)
+                return;
+
+            var env = this.env;
+            while (env) {
+                while (env && env.getSvSymbolProcedure() == null)
+                    env = env.getEnvParent();
+                if (env) {
+                    (self => {
+                        var divStackFrame = document.createElement('div');
+                        divStackFrame.classList.add('sicp-stack-frame');
+
+                        var pTitle = document.createElement('p');
+                        pTitle.innerHTML = env.getSvSymbolProcedure().toString();
+                        divStackFrame.appendChild(pTitle);
+                        self.stackTraceElement.appendChild(divStackFrame);
+
+                    })(this);
+                    env = env.getEnvParentStackFrame();
+                }
+            }
+        }
         showVariables() {
            
             this.variablesElement.innerHTML = "";

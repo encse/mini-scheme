@@ -1,10 +1,15 @@
 module Sicp.Lang {
+
     export class Env {
         private obj: {[id: string] : Sv} = {};
         private envParent: Env = null;
+        private svSymbolProcedure: SvSymbol;
+        private envParentStackFrame: Env = null;
 
-        constructor(envParent: Env) {
+        constructor(envParent: Env, svSymbolProcedure: SvSymbol = null, envParentStackFrame: Env = null) {
             this.envParent = envParent;
+            this.svSymbolProcedure = svSymbolProcedure;
+            this.envParentStackFrame = envParentStackFrame;
         }
 
         public getNames(): string[] {
@@ -18,6 +23,14 @@ module Sicp.Lang {
 
         public getEnvParent(): Env {
             return this.envParent;
+        }
+
+        public getSvSymbolProcedure(): SvSymbol{
+            return this.svSymbolProcedure;
+        }
+
+        public getEnvParentStackFrame(): Env {
+            return this.envParentStackFrame;
         }
 
         public get(name: string):Sv {

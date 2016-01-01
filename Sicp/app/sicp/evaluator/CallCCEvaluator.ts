@@ -13,7 +13,7 @@ module Sicp.Evaluator {
             /* (call-with-current-continuation (lambda (hop) ...)) */
             return this.evaluator.evaluate(this.getLambda(sv), env, lambda => {
                 var args = Lang.SvCons.listFromRvs(CallCCEvaluator.createCcProcedure(cont));
-                return ApplicationEvaluator.evalCall(lambda, args, cont, this.evaluator);
+                return ApplicationEvaluator.evalCall(lambda, args, env, cont, this.evaluator);
             });
         }
 

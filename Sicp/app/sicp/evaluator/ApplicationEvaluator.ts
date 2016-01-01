@@ -9,7 +9,7 @@ module Sicp.Evaluator {
             return Lang.SvCons.matches(sv);
         }
 
-        public static evalCall(operator:Lang.Sv, args: Lang.Sv, cont:Lang.Cont, evaluator:Evaluator.BaseEvaluator):Lang.Sv {
+        public static evalCall(operator:Lang.Sv, args: Lang.Sv, envCurrent:Lang.Env,cont:Lang.Cont, evaluator:Evaluator.BaseEvaluator):Lang.Sv {
              
             if (this.isPrimitiveProcedure(operator)) {
                 return new Lang.SvThunk(cont, this.getPrimitiveProcedureDelegate(operator)(args));
@@ -24,7 +24,7 @@ module Sicp.Evaluator {
                 return this.getContinuationFromCapturedContinuation(operator)(arg);
             }
             else if(this.isCompoundProcedure(operator)) {
-                const newEnv = new Lang.Env(this.getProcedureEnv(operator));
+                const newEnv = new Lang.Env(this.getProcedureEnv(operator), this.getProcedureSymbol(operator), envCurrent);
                 let params = this.getProcedureParameters(operator);
 
                 while (!Lang.SvCons.isNil(args) || !Lang.SvCons.isNil(params)) {
@@ -55,7 +55,7 @@ module Sicp.Evaluator {
                     throw 'undefined procedure ' + ApplicationEvaluator.getOperator(sv).toString();
 
                 return this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env,
-                    args => ApplicationEvaluator.evalCall(operator, args, cont, this.evaluator));
+                    args => ApplicationEvaluator.evalCall(operator, args, env, cont, this.evaluator));
             });
             
         }
@@ -76,9 +76,10 @@ module Sicp.Evaluator {
             return Lang.SvAny.val(Lang.SvCons.cdr(expr)); 
         }
 
-        private static getProcedureParameters(expr: Lang.Sv) { return Lang.SvCons.cadr(expr); }
-        private static getProcedureBody(expr: Lang.Sv) { return Lang.SvCons.caddr(expr); }
-        private static getProcedureEnv(expr: Lang.Sv): Lang.Env { return Lang.SvAny.val(Lang.SvCons.cadddr(expr)); }
+        private static getProcedureSymbol(expr: Lang.Sv):Lang.SvSymbol { return Lang.SvSymbol.cast(Lang.SvCons.cadr(expr)); }
+        private static getProcedureParameters(expr: Lang.Sv) { return Lang.SvCons.caddr(expr); }
+        private static getProcedureBody(expr: Lang.Sv) { return Lang.SvCons.cadddr(expr); }
+        private static getProcedureEnv(expr: Lang.Sv): Lang.Env { return Lang.SvAny.val(Lang.SvCons.caddddr(expr)); }
         private static getPrimitiveProcedureDelegate(expr: Lang.Sv) { return Lang.SvAny.val(Lang.SvCons.cdr(expr)); }
         private static getOperator(expr: Lang.Sv) { return Lang.SvCons.car(expr); }
         private static getArguments(expr: Lang.Sv) { return Lang.SvCons.cdr(expr); }

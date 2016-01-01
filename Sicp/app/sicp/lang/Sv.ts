@@ -28,10 +28,12 @@
 
         public static matches(node: Sv) { return node instanceof SvThunk; }
 
+        public static cast(sv: Sv): SvThunk {
+            if (!SvThunk.matches(sv)) throw "Breakpoint expected";
+            return <SvThunk>sv;
+        }
         public static call(sv: Sv) {
-            if (!SvThunk.matches(sv)) throw "Thunk expected";
-
-            return (<SvThunk>sv).cont((<SvThunk>sv).val);
+           return SvThunk.cast(sv).cont((<SvThunk>sv).val);
         }
     }
     export class SvBreakpoint extends Sv {
@@ -39,13 +41,16 @@
 
         public static matches(node: Sv) { return node instanceof SvBreakpoint; }
 
-        public static env(sv: Sv): Env {
+        public static cast(sv: Sv): SvBreakpoint {
             if (!SvBreakpoint.matches(sv)) throw "Breakpoint expected";
-            return (<SvBreakpoint>sv)._env;
+            return <SvBreakpoint>sv;
+        }
+
+        public static env(sv: Sv): Env {
+            return SvBreakpoint.cast(sv)._env;
         } 
-        public static val(node: Sv): () => Sv {
-            if (!SvBreakpoint.matches(node)) throw "Breakpoint expected";
-            return (<SvBreakpoint>node)._val;
+        public static val(sv: Sv): () => Sv {
+            return SvBreakpoint.cast(sv)._val;
         }
 
         public toString(): string {
@@ -82,25 +87,30 @@
             return node === SvCons.Nil || (SvCons.matches(node) && SvCons.car(node) === null && SvCons.cdr(node) === null);
         }
 
+        public static val(sv: Sv) {
+            return SvAny.cast(sv)._val;
+        }
+
+        public static cast(sv: Sv): SvCons {
+            if (!SvCons.matches(sv)) throw "Cons expected";
+            return <SvCons>sv;
+        }
+
         public static car(node: Sv) {
-            if (!SvCons.matches(node)) throw "Cons expected";
-            return (<SvCons>node)._car;
+            return SvCons.cast(node)._car;
         }
 
         public static cdr(node: Sv) {
-            if (!SvCons.matches(node)) throw "Cons expected";
-            return (<SvCons>node)._cdr;
+            return SvCons.cast(node)._cdr;
         }
 
         static setCar(cons: Sv, newCar: Sv) {
-            if (!SvCons.matches(cons)) throw "Cons expected";
-            (<SvCons>cons)._car = newCar;
+            SvCons.cast(cons)._car = newCar;
             return cons;
         }
 
         static setCdr(cons: Sv, newCdr: Sv) {
-            if (!SvCons.matches(cons)) throw "Cons expected";
-            (<SvCons>cons)._cdr = newCdr;
+            SvCons.cast(cons)._cdr = newCdr;
             return cons;
         }
         public static cadr(node: Sv) {
@@ -119,10 +129,16 @@
             return this.cdr(this.cddr(node));
         }
 
+        public static cddddr(node: Sv) {
+            return this.cdr(this.cdddr(node));
+        }
+
         public static cadddr(node: Sv) {
             return this.car(this.cdddr(node));
         }
-
+        public static caddddr(node: Sv) {
+            return this.car(this.cddddr(node));
+        }
         public static lengthI(lst: Sv) {
             let l = 0;
             while (!this.isNil(lst)) {
@@ -173,10 +189,15 @@
 
         public static matches(node: Sv) { return node instanceof SvAny; }
 
-        public static val(node: Sv) {
-            if (!SvAny.matches(node)) throw "SvAny expected";
-            return (<SvAny>node)._val;
+        public static val(sv: Sv) {
+            return SvAny.cast(sv)._val;
         }
+
+        public static cast(sv: Sv): SvAny {
+            if (!SvAny.matches(sv)) throw "any expected";
+            return <SvAny>sv;
+        }
+
         public toDisplayString(): string {
             return '';
         }
@@ -200,9 +221,13 @@
             return SvBool.matches(node) && !SvBool.val(node);
         }
 
-        public static val(node: Sv) {
-            if (!SvBool.matches(node)) throw "bool expected";
-            return (<SvBool>node)._val;
+        public static val(sv: Sv) {
+            return SvBool.cast(sv)._val;
+        }
+
+        public static cast(sv: Sv): SvBool {
+            if (!SvBool.matches(sv)) throw "bool expected";
+            return <SvBool>sv;
         }
 
         public toDisplayString(): string {
@@ -249,9 +274,13 @@
 
         public static matches(node: Sv) { return node instanceof SvString; }
 
-        public static val(node: Sv) {
-            if (!SvString.matches(node)) throw "string expected";
-            return (<SvString>node)._val;
+        public static val(sv: Sv) {
+            return SvString.cast(sv)._val;
+        }
+
+        public static cast(sv: Sv): SvString {
+            if (!SvString.matches(sv)) throw "string expected";
+            return <SvString>sv;
         }
 
         public toDisplayString(): string {
@@ -269,10 +298,13 @@
         public static matches(node: Sv) { return node instanceof SvNumber; }
 
         public static val(node: Sv) {
-            if (!SvNumber.matches(node)) throw "Number expected";
-            return (<SvNumber>node)._val;
+            return SvNumber.cast(node)._val;
         }
 
+        public static cast(sv: Sv): SvNumber {
+            if (!SvNumber.matches(sv)) throw "Number expected";
+            return <SvNumber>sv;
+        }
 
         public toDisplayString(): string {
             return this.toString();
@@ -290,8 +322,12 @@
         public static matches(node: Sv) { return node instanceof SvSymbol; }
 
         public static val(node: Sv) {
-            if (!SvSymbol.matches(node)) throw "Symbol expected";
-            return (<SvSymbol>node)._val;
+            return SvSymbol.cast(node)._val;
+        }
+
+        public static cast(sv: Sv): SvSymbol {
+            if (!SvSymbol.matches(sv)) throw "Symbol expected";
+            return <SvSymbol>sv;
         }
 
         public toDisplayString(): string {
@@ -301,6 +337,8 @@
         public toString(): string {
             return this._val;
         }
+
+     
     }
 
 }

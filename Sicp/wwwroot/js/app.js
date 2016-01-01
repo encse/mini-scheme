@@ -1,11 +1,12 @@
 var Editor;
 (function (Editor) {
     var SicpEditor = (function () {
-        function SicpEditor(editorDiv, outputDiv, variablesDiv, samples) {
+        function SicpEditor(editorDiv, outputDiv, variablesDiv, stackTraceDiv, samples) {
             var _this = this;
             this.editorDiv = editorDiv;
             this.outputDiv = outputDiv;
             this.variablesDiv = variablesDiv;
+            this.stackTraceDiv = stackTraceDiv;
             this.samples = samples;
             this.currentMarker = null;
             this.currentTimeout = null;
@@ -46,6 +47,7 @@ var Editor;
                 editorDiv.appendChild(editorWindow);
                 _this.outputElement = outputDiv;
                 _this.variablesElement = variablesDiv;
+                _this.stackTraceElement = stackTraceDiv;
                 _this.editor = ace.edit(editorWindow);
                 _this.editor.setTheme('ace/theme/chrome');
                 _this.editor.getSession().setMode('ace/mode/sicp');
@@ -66,6 +68,14 @@ var Editor;
                     };
                     selectSample.onchange(null);
                 }
+                $('.sicp-box').each(function (_, box) {
+                    $(box).children('.sicp-box-tab').each(function (__, tab) {
+                        $(tab).children('.sicp-box-tab-title').click(function () {
+                            $(box).children('.sicp-box-tab').removeClass('sicp-box-current-tab');
+                            $(tab).addClass('sicp-box-current-tab');
+                        });
+                    });
+                });
                 _this.updateUI();
             });
         }
@@ -94,7 +104,29 @@ var Editor;
             this.btnContinue.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
             this.btnStop.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
             this.btnStep.style.display = !this.isRunning ? "inline" : "none";
+            this.showStackTrace();
             this.showVariables();
+        };
+        SicpEditor.prototype.showStackTrace = function () {
+            this.stackTraceElement.innerHTML = "";
+            if (this.isRunning)
+                return;
+            var env = this.env;
+            while (env) {
+                while (env && env.getSvSymbolProcedure() == null)
+                    env = env.getEnvParent();
+                if (env) {
+                    (function (self) {
+                        var divStackFrame = document.createElement('div');
+                        divStackFrame.classList.add('sicp-stack-frame');
+                        var pTitle = document.createElement('p');
+                        pTitle.innerHTML = env.getSvSymbolProcedure().toString();
+                        divStackFrame.appendChild(pTitle);
+                        self.stackTraceElement.appendChild(divStackFrame);
+                    })(this);
+                    env = env.getEnvParentStackFrame();
+                }
+            }
         };
         SicpEditor.prototype.showVariables = function () {
             var _this = this;
@@ -194,10 +226,15 @@ var Sicp;
     var Lang;
     (function (Lang) {
         var Env = (function () {
-            function Env(envParent) {
+            function Env(envParent, svSymbolProcedure, envParentStackFrame) {
+                if (svSymbolProcedure === void 0) { svSymbolProcedure = null; }
+                if (envParentStackFrame === void 0) { envParentStackFrame = null; }
                 this.obj = {};
                 this.envParent = null;
+                this.envParentStackFrame = null;
                 this.envParent = envParent;
+                this.svSymbolProcedure = svSymbolProcedure;
+                this.envParentStackFrame = envParentStackFrame;
             }
             Env.prototype.getNames = function () {
                 var res = [];
@@ -209,6 +246,12 @@ var Sicp;
             };
             Env.prototype.getEnvParent = function () {
                 return this.envParent;
+            };
+            Env.prototype.getSvSymbolProcedure = function () {
+                return this.svSymbolProcedure;
+            };
+            Env.prototype.getEnvParentStackFrame = function () {
+                return this.envParentStackFrame;
             };
             Env.prototype.get = function (name) {
                 if (name in this.obj)
@@ -249,7 +292,7 @@ var Sicp;
             ApplicationEvaluator.prototype.matches = function (sv) {
                 return Sicp.Lang.SvCons.matches(sv);
             };
-            ApplicationEvaluator.evalCall = function (operator, args, cont, evaluator) {
+            ApplicationEvaluator.evalCall = function (operator, args, envCurrent, cont, evaluator) {
                 if (this.isPrimitiveProcedure(operator)) {
                     return new Sicp.Lang.SvThunk(cont, this.getPrimitiveProcedureDelegate(operator)(args));
                 }
@@ -263,7 +306,7 @@ var Sicp;
                     return this.getContinuationFromCapturedContinuation(operator)(arg);
                 }
                 else if (this.isCompoundProcedure(operator)) {
-                    var newEnv = new Sicp.Lang.Env(this.getProcedureEnv(operator));
+                    var newEnv = new Sicp.Lang.Env(this.getProcedureEnv(operator), this.getProcedureSymbol(operator), envCurrent);
                     var params = this.getProcedureParameters(operator);
                     while (!Sicp.Lang.SvCons.isNil(args) || !Sicp.Lang.SvCons.isNil(params)) {
                         if (Sicp.Lang.SvCons.isNil(args))
@@ -288,7 +331,7 @@ var Sicp;
                         !ApplicationEvaluator.isCompoundProcedure(operator) &&
                         !ApplicationEvaluator.isContinuation(operator))
                         throw 'undefined procedure ' + ApplicationEvaluator.getOperator(sv).toString();
-                    return _this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env, function (args) { return ApplicationEvaluator.evalCall(operator, args, cont, _this.evaluator); });
+                    return _this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env, function (args) { return ApplicationEvaluator.evalCall(operator, args, env, cont, _this.evaluator); });
                 });
             };
             ApplicationEvaluator.isCompoundProcedure = function (expr) {
@@ -303,9 +346,10 @@ var Sicp;
             ApplicationEvaluator.getContinuationFromCapturedContinuation = function (expr) {
                 return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cdr(expr));
             };
-            ApplicationEvaluator.getProcedureParameters = function (expr) { return Sicp.Lang.SvCons.cadr(expr); };
-            ApplicationEvaluator.getProcedureBody = function (expr) { return Sicp.Lang.SvCons.caddr(expr); };
-            ApplicationEvaluator.getProcedureEnv = function (expr) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cadddr(expr)); };
+            ApplicationEvaluator.getProcedureSymbol = function (expr) { return Sicp.Lang.SvSymbol.cast(Sicp.Lang.SvCons.cadr(expr)); };
+            ApplicationEvaluator.getProcedureParameters = function (expr) { return Sicp.Lang.SvCons.caddr(expr); };
+            ApplicationEvaluator.getProcedureBody = function (expr) { return Sicp.Lang.SvCons.cadddr(expr); };
+            ApplicationEvaluator.getProcedureEnv = function (expr) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.caddddr(expr)); };
             ApplicationEvaluator.getPrimitiveProcedureDelegate = function (expr) { return Sicp.Lang.SvAny.val(Sicp.Lang.SvCons.cdr(expr)); };
             ApplicationEvaluator.getOperator = function (expr) { return Sicp.Lang.SvCons.car(expr); };
             ApplicationEvaluator.getArguments = function (expr) { return Sicp.Lang.SvCons.cdr(expr); };
@@ -466,7 +510,7 @@ var Sicp;
                 /* (call-with-current-continuation (lambda (hop) ...)) */
                 return this.evaluator.evaluate(this.getLambda(sv), env, function (lambda) {
                     var args = Sicp.Lang.SvCons.listFromRvs(CallCCEvaluator.createCcProcedure(cont));
-                    return Evaluator.ApplicationEvaluator.evalCall(lambda, args, cont, _this.evaluator);
+                    return Evaluator.ApplicationEvaluator.evalCall(lambda, args, env, cont, _this.evaluator);
                 });
             };
             CallCCEvaluator.prototype.getLambda = function (sv) { return Sicp.Lang.SvCons.cadr(sv); };
@@ -533,7 +577,7 @@ var Sicp;
                 var _this = this;
                 if (Sicp.Lang.SvCons.matches(this.getHead(sv))) {
                     //implicit lambda definition
-                    var lambda = Evaluator.LambdaEvaluator.createCompoundProcedure(this.getLambdaParameters(sv), this.getLambdaBody(sv), env);
+                    var lambda = Evaluator.LambdaEvaluator.createCompoundProcedure(this.getFunctionName(sv), this.getLambdaParameters(sv), this.getLambdaBody(sv), env);
                     env.define(Sicp.Lang.SvSymbol.val(this.getFunctionName(sv)), lambda);
                     return new Sicp.Lang.SvThunk(cont, lambda);
                 }
@@ -594,11 +638,11 @@ var Sicp;
                 return Evaluator.BaseEvaluator.isTaggedList(node, 'lambda');
             };
             LambdaEvaluator.prototype.evaluate = function (sv, env, cont) {
-                var proc = LambdaEvaluator.createCompoundProcedure(LambdaEvaluator.getLambdaParameters(sv), LambdaEvaluator.getLambdaBody(sv), env);
+                var proc = LambdaEvaluator.createCompoundProcedure(new Sicp.Lang.SvSymbol("lambda"), LambdaEvaluator.getLambdaParameters(sv), LambdaEvaluator.getLambdaBody(sv), env);
                 return new Sicp.Lang.SvThunk(cont, proc);
             };
-            LambdaEvaluator.createCompoundProcedure = function (params, body, env) {
-                return Sicp.Lang.SvCons.listFromRvs(new Sicp.Lang.SvSymbol('procedure'), params, body, new Sicp.Lang.SvAny(env));
+            LambdaEvaluator.createCompoundProcedure = function (name, params, body, env) {
+                return Sicp.Lang.SvCons.listFromRvs(new Sicp.Lang.SvSymbol('procedure'), name, params, body, new Sicp.Lang.SvAny(env));
             };
             LambdaEvaluator.getLambdaParameters = function (expr) { return Sicp.Lang.SvCons.cadr(expr); };
             LambdaEvaluator.getLambdaBody = function (expr) { return Sicp.Lang.SvCons.cddr(expr); };
@@ -1002,10 +1046,13 @@ var Sicp;
                 this.val = val;
             }
             SvThunk.matches = function (node) { return node instanceof SvThunk; };
-            SvThunk.call = function (sv) {
+            SvThunk.cast = function (sv) {
                 if (!SvThunk.matches(sv))
-                    throw "Thunk expected";
-                return sv.cont(sv.val);
+                    throw "Breakpoint expected";
+                return sv;
+            };
+            SvThunk.call = function (sv) {
+                return SvThunk.cast(sv).cont(sv.val);
             };
             return SvThunk;
         })(Sv);
@@ -1018,15 +1065,16 @@ var Sicp;
                 this._env = _env;
             }
             SvBreakpoint.matches = function (node) { return node instanceof SvBreakpoint; };
-            SvBreakpoint.env = function (sv) {
+            SvBreakpoint.cast = function (sv) {
                 if (!SvBreakpoint.matches(sv))
                     throw "Breakpoint expected";
-                return sv._env;
+                return sv;
             };
-            SvBreakpoint.val = function (node) {
-                if (!SvBreakpoint.matches(node))
-                    throw "Breakpoint expected";
-                return node._val;
+            SvBreakpoint.env = function (sv) {
+                return SvBreakpoint.cast(sv)._env;
+            };
+            SvBreakpoint.val = function (sv) {
+                return SvBreakpoint.cast(sv)._val;
             };
             SvBreakpoint.prototype.toString = function () {
                 return "T(" + this._val.toString() + ")";
@@ -1064,26 +1112,26 @@ var Sicp;
             SvCons.isNil = function (node) {
                 return node === SvCons.Nil || (SvCons.matches(node) && SvCons.car(node) === null && SvCons.cdr(node) === null);
             };
-            SvCons.car = function (node) {
-                if (!SvCons.matches(node))
+            SvCons.val = function (sv) {
+                return SvAny.cast(sv)._val;
+            };
+            SvCons.cast = function (sv) {
+                if (!SvCons.matches(sv))
                     throw "Cons expected";
-                return node._car;
+                return sv;
+            };
+            SvCons.car = function (node) {
+                return SvCons.cast(node)._car;
             };
             SvCons.cdr = function (node) {
-                if (!SvCons.matches(node))
-                    throw "Cons expected";
-                return node._cdr;
+                return SvCons.cast(node)._cdr;
             };
             SvCons.setCar = function (cons, newCar) {
-                if (!SvCons.matches(cons))
-                    throw "Cons expected";
-                cons._car = newCar;
+                SvCons.cast(cons)._car = newCar;
                 return cons;
             };
             SvCons.setCdr = function (cons, newCdr) {
-                if (!SvCons.matches(cons))
-                    throw "Cons expected";
-                cons._cdr = newCdr;
+                SvCons.cast(cons)._cdr = newCdr;
                 return cons;
             };
             SvCons.cadr = function (node) {
@@ -1098,8 +1146,14 @@ var Sicp;
             SvCons.cdddr = function (node) {
                 return this.cdr(this.cddr(node));
             };
+            SvCons.cddddr = function (node) {
+                return this.cdr(this.cdddr(node));
+            };
             SvCons.cadddr = function (node) {
                 return this.car(this.cdddr(node));
+            };
+            SvCons.caddddr = function (node) {
+                return this.car(this.cddddr(node));
             };
             SvCons.lengthI = function (lst) {
                 var l = 0;
@@ -1150,10 +1204,13 @@ var Sicp;
                 this._val = _val;
             }
             SvAny.matches = function (node) { return node instanceof SvAny; };
-            SvAny.val = function (node) {
-                if (!SvAny.matches(node))
-                    throw "SvAny expected";
-                return node._val;
+            SvAny.val = function (sv) {
+                return SvAny.cast(sv)._val;
+            };
+            SvAny.cast = function (sv) {
+                if (!SvAny.matches(sv))
+                    throw "any expected";
+                return sv;
             };
             SvAny.prototype.toDisplayString = function () {
                 return '';
@@ -1177,10 +1234,13 @@ var Sicp;
             SvBool.isFalse = function (node) {
                 return SvBool.matches(node) && !SvBool.val(node);
             };
-            SvBool.val = function (node) {
-                if (!SvBool.matches(node))
+            SvBool.val = function (sv) {
+                return SvBool.cast(sv)._val;
+            };
+            SvBool.cast = function (sv) {
+                if (!SvBool.matches(sv))
                     throw "bool expected";
-                return node._val;
+                return sv;
             };
             SvBool.prototype.toDisplayString = function () {
                 return this.toString();
@@ -1222,10 +1282,13 @@ var Sicp;
                 this._val = _val;
             }
             SvString.matches = function (node) { return node instanceof SvString; };
-            SvString.val = function (node) {
-                if (!SvString.matches(node))
+            SvString.val = function (sv) {
+                return SvString.cast(sv)._val;
+            };
+            SvString.cast = function (sv) {
+                if (!SvString.matches(sv))
                     throw "string expected";
-                return node._val;
+                return sv;
             };
             SvString.prototype.toDisplayString = function () {
                 return this._val;
@@ -1244,9 +1307,12 @@ var Sicp;
             }
             SvNumber.matches = function (node) { return node instanceof SvNumber; };
             SvNumber.val = function (node) {
-                if (!SvNumber.matches(node))
+                return SvNumber.cast(node)._val;
+            };
+            SvNumber.cast = function (sv) {
+                if (!SvNumber.matches(sv))
                     throw "Number expected";
-                return node._val;
+                return sv;
             };
             SvNumber.prototype.toDisplayString = function () {
                 return this.toString();
@@ -1265,9 +1331,12 @@ var Sicp;
             }
             SvSymbol.matches = function (node) { return node instanceof SvSymbol; };
             SvSymbol.val = function (node) {
-                if (!SvSymbol.matches(node))
+                return SvSymbol.cast(node)._val;
+            };
+            SvSymbol.cast = function (sv) {
+                if (!SvSymbol.matches(sv))
                     throw "Symbol expected";
-                return node._val;
+                return sv;
             };
             SvSymbol.prototype.toDisplayString = function () {
                 return this.toString();
