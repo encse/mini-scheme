@@ -86,7 +86,7 @@ body {
 }
 
 .errorHighlight {
-	background: yellow;
+	background: #e6ecff;
 	position: absolute;
 }
 
@@ -130,7 +130,19 @@ body {
 	background: #f3f3f3;
 
 	margin: 0;
+
+	-webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
+
+.sicp-box {
+	cursor: default;
+}
+
 .sicp-box-tab, .sicp-box-tab-title {
 	display: inline-block;
 	margin: 0;
@@ -209,11 +221,14 @@ body {
 #variables table {
 	border-collapse: collapse;
 	width: 100%;
+	table-layout: fixed;
 }
 
 #variables td:last-child, th:last-child {
 	border-left: 1px solid lightgray;
 	border-bottom: 1px solid lightgray;
+	width: 80%;
+	
 }
 
 #variables td:first-child, th:first-child {
@@ -223,16 +238,20 @@ body {
 
 #variables td {
 	vertical-align: top;
-	padding: 2px;
+	padding: 4px;
 }
 .sicp-stack-frame {
 	margin: 0;
-	padding: 4px;
+	padding: 0;
 }
 .sicp-stack-frame p{
 	display: block;
 	margin: 0;
-	padding: 0;
+	padding: 4px;
+}
+
+.sicp-stack-frame p.sicp-stack-frame-current {
+	font-weight: bold;
 }
 
 .sicp-stack-frame:nth-child(even) {
@@ -241,4 +260,8 @@ body {
 
 .sicp-stack-frame:nth-child(odd) {
 	background: #ebebeb;
+}
+
+.sicp-stack-frame:hover {
+	background: lightgray;
 }

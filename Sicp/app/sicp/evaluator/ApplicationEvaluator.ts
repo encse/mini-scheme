@@ -9,7 +9,7 @@ module Sicp.Evaluator {
             return Lang.SvCons.matches(sv);
         }
 
-        public static evalCall(operator:Lang.Sv, args: Lang.Sv, envCurrent:Lang.Env,cont:Lang.Cont, evaluator:Evaluator.BaseEvaluator):Lang.Sv {
+        public static evalCall(operator:Lang.Sv, args: Lang.Sv, stackFrameCurrent:Lang.StackFrame,cont:Lang.Cont, evaluator:Evaluator.BaseEvaluator):Lang.Sv {
              
             if (this.isPrimitiveProcedure(operator)) {
                 return new Lang.SvThunk(cont, this.getPrimitiveProcedureDelegate(operator)(args));
@@ -24,7 +24,7 @@ module Sicp.Evaluator {
                 return this.getContinuationFromCapturedContinuation(operator)(arg);
             }
             else if(this.isCompoundProcedure(operator)) {
-                const newEnv = new Lang.Env(this.getProcedureEnv(operator), this.getProcedureSymbol(operator), envCurrent);
+                const newEnv = new Lang.Env(this.getProcedureEnv(operator), this.getProcedureSymbol(operator), stackFrameCurrent);
                 let params = this.getProcedureParameters(operator);
 
                 while (!Lang.SvCons.isNil(args) || !Lang.SvCons.isNil(params)) {
@@ -55,7 +55,7 @@ module Sicp.Evaluator {
                     throw 'undefined procedure ' + ApplicationEvaluator.getOperator(sv).toString();
 
                 return this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env,
-                    args => ApplicationEvaluator.evalCall(operator, args, env, cont, this.evaluator));
+                    args => ApplicationEvaluator.evalCall(operator, args, new Lang.StackFrame(sv, env), cont, this.evaluator));
             });
             
         }

@@ -1,4 +1,5 @@
 ﻿module Editor {
+
     export class SicpEditor
     {
         editor: AceAjax.Editor;
@@ -14,8 +15,10 @@
         btnContinue: HTMLButtonElement;
 
         isRunning:boolean = false;
-        sv: Sicp.Lang.Sv;
-        env: Sicp.Lang.Env;
+
+        svBreakPoint:Sicp.Lang.SvBreakpoint;
+        istackFrame:number;
+
         interpreter = new Sicp.Lang.Interpreter();
         Range: any;
 
@@ -113,12 +116,30 @@
             this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + st;
         }
 
-        setMarker(sv: Sicp.Lang.Sv) {
-            this.clearMarker();
-            if (sv) {
-                this.currentMarker = this.editor.getSession().addMarker(
-                    new this.Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
-                this.editor.gotoLine(sv.ilineStart);
+        private getFirstStackFrame(): Sicp.Lang.StackFrame {
+            return !this.svBreakPoint ? null : new Sicp.Lang.StackFrame(this.svBreakPoint, this.svBreakPoint.env());
+
+        }
+        private getCurrentStackFrame():Sicp.Lang.StackFrame {
+            var i = 0;
+            var stackFrame = this.getFirstStackFrame();
+            while (stackFrame && i < this.istackFrame) {
+                stackFrame = stackFrame.parent();
+                i++;
+            }
+            return stackFrame;
+        }
+
+        showCurrentStatement() {
+            if (!this.isRunning) {
+                this.clearMarker();
+                var stackFrame = this.getCurrentStackFrame();
+                if (stackFrame) {
+                    var sv = stackFrame.sv();
+                    this.currentMarker = this.editor.getSession().addMarker(
+                        new this.Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
+                    this.editor.gotoLine(sv.ilineStart);
+                }
             }
         }
         clearMarker() {
@@ -127,40 +148,54 @@
         }
 
         updateUI() {
-            this.editor.setReadOnly(this.sv != null);
-            this.btnRun.style.display = this.sv == null ? "inline" : "none";
+            this.editor.setReadOnly(this.svBreakPoint != null);
+            this.btnRun.style.display = this.svBreakPoint == null ? "inline" : "none";
             this.btnBreak.style.display = this.isRunning ? "inline" : "none";
-            this.btnContinue.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
-            this.btnStop.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
+            this.btnContinue.style.display = !this.isRunning && this.svBreakPoint != null ? "inline" : "none";
+            this.btnStop.style.display = !this.isRunning && this.svBreakPoint != null ? "inline" : "none";
             this.btnStep.style.display = !this.isRunning ? "inline" : "none";
 
+            this.showCurrentStatement();
             this.showStackTrace();
             this.showVariables();
 
         }
         showStackTrace() {
             this.stackTraceElement.innerHTML = "";
-
             if (this.isRunning)
                 return;
+            var stackFrame = this.getFirstStackFrame();
 
-            var env = this.env;
-            while (env) {
-                while (env && env.getSvSymbolProcedure() == null)
+            var i = 0;
+            while (stackFrame) {
+                var env = stackFrame.env();
+
+                while (env != null && env.getSvSymbolProcedure() == null)
                     env = env.getEnvParent();
-                if (env) {
-                    (self => {
-                        var divStackFrame = document.createElement('div');
-                        divStackFrame.classList.add('sicp-stack-frame');
 
-                        var pTitle = document.createElement('p');
+                ((self, selfI) => {
+                    var divStackFrame = document.createElement('div');
+                    divStackFrame.classList.add('sicp-stack-frame');
+
+                    var pTitle = document.createElement('p');
+                    if (!env)
+                        pTitle.innerHTML = "&laquo; not in procedure &raquo;";
+                    else
                         pTitle.innerHTML = env.getSvSymbolProcedure().toString();
-                        divStackFrame.appendChild(pTitle);
-                        self.stackTraceElement.appendChild(divStackFrame);
 
-                    })(this);
-                    env = env.getEnvParentStackFrame();
-                }
+                    $(pTitle).click(() => {
+                        this.istackFrame = selfI;
+                        this.updateUI();
+                    });
+                                   
+                    if (selfI === this.istackFrame)
+                        pTitle.classList.add('sicp-stack-frame-current');
+                    divStackFrame.appendChild(pTitle);
+                    self.stackTraceElement.appendChild(divStackFrame);
+
+                })(this, i);
+                stackFrame = stackFrame.parent();
+                i++;
             }
         }
         showVariables() {
@@ -170,7 +205,11 @@
             if (this.isRunning)
                 return;
 
-            var env = this.env;
+            var stackFrame = this.getCurrentStackFrame();
+            if (!stackFrame)
+                return;
+
+            var env = stackFrame.env();
             while (env) {
                 (self => {
                     var divScope = document.createElement('div');
@@ -195,7 +234,7 @@
                         td1.innerHTML = name;
                         var td2 = document.createElement('td');
                         td1.classList.add('sicp-variable-value');
-                        td2.innerHTML = this.env.get(name).toString();
+                        td2.innerHTML = env.get(name).toString();
                         tr.appendChild(td1);
                         tr.appendChild(td2);
                     });
@@ -215,36 +254,35 @@
         step() {
             
             this.clearMarker();
+            var sv: Sicp.Lang.Sv = null;
             try {
-                if (!this.sv)
-                    this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
+
+                if (!this.svBreakPoint)
+                    sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
                 else
-                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 10000 : 1);
+                    sv = this.interpreter.step(this.svBreakPoint, this.isRunning ? 10000 : 1);
                           
             } catch (ex) {
                 this.log(ex);
-                this.sv = null;
+                sv = null;
             }
 
-
-            if (this.sv == null) {
-                this.isRunning = false;
-                this.env = null;
+            if (sv != null && Sicp.Lang.SvBreakpoint.matches(sv)) {
+                this.svBreakPoint = Sicp.Lang.SvBreakpoint.cast(sv);
+                this.istackFrame = 0;
             } else {
-                this.env = Sicp.Lang.SvBreakpoint.env(this.sv);
+                this.svBreakPoint = null;
+                this.isRunning = false;
             }
 
-            if (!this.isRunning) {
-                this.setMarker(this.sv);
-            } else
+            if (this.isRunning)
                 this.currentTimeout = window.setTimeout(this.step.bind(this), 1);
 
             this.updateUI();
         }
 
         stop() {
-            this.sv = null;
-            this.env = null;
+            this.svBreakPoint = null;
             this.isRunning = false;
             this.clearMarker();
             this.clearOutput();

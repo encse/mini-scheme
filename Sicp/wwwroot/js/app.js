@@ -86,11 +86,27 @@ var Editor;
             st = st.replace('\n', '<br />');
             this.outputElement.innerHTML = this.outputElement.innerHTML === "" ? st : this.outputElement.innerHTML + st;
         };
-        SicpEditor.prototype.setMarker = function (sv) {
-            this.clearMarker();
-            if (sv) {
-                this.currentMarker = this.editor.getSession().addMarker(new this.Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
-                this.editor.gotoLine(sv.ilineStart);
+        SicpEditor.prototype.getFirstStackFrame = function () {
+            return !this.svBreakPoint ? null : new Sicp.Lang.StackFrame(this.svBreakPoint, this.svBreakPoint.env());
+        };
+        SicpEditor.prototype.getCurrentStackFrame = function () {
+            var i = 0;
+            var stackFrame = this.getFirstStackFrame();
+            while (stackFrame && i < this.istackFrame) {
+                stackFrame = stackFrame.parent();
+                i++;
+            }
+            return stackFrame;
+        };
+        SicpEditor.prototype.showCurrentStatement = function () {
+            if (!this.isRunning) {
+                this.clearMarker();
+                var stackFrame = this.getCurrentStackFrame();
+                if (stackFrame) {
+                    var sv = stackFrame.sv();
+                    this.currentMarker = this.editor.getSession().addMarker(new this.Range(sv.ilineStart, sv.icolStart, sv.ilineEnd, sv.icolEnd), "errorHighlight", "text", false);
+                    this.editor.gotoLine(sv.ilineStart);
+                }
             }
         };
         SicpEditor.prototype.clearMarker = function () {
@@ -98,42 +114,56 @@ var Editor;
                 this.editor.getSession().removeMarker(this.currentMarker);
         };
         SicpEditor.prototype.updateUI = function () {
-            this.editor.setReadOnly(this.sv != null);
-            this.btnRun.style.display = this.sv == null ? "inline" : "none";
+            this.editor.setReadOnly(this.svBreakPoint != null);
+            this.btnRun.style.display = this.svBreakPoint == null ? "inline" : "none";
             this.btnBreak.style.display = this.isRunning ? "inline" : "none";
-            this.btnContinue.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
-            this.btnStop.style.display = !this.isRunning && this.sv != null ? "inline" : "none";
+            this.btnContinue.style.display = !this.isRunning && this.svBreakPoint != null ? "inline" : "none";
+            this.btnStop.style.display = !this.isRunning && this.svBreakPoint != null ? "inline" : "none";
             this.btnStep.style.display = !this.isRunning ? "inline" : "none";
+            this.showCurrentStatement();
             this.showStackTrace();
             this.showVariables();
         };
         SicpEditor.prototype.showStackTrace = function () {
+            var _this = this;
             this.stackTraceElement.innerHTML = "";
             if (this.isRunning)
                 return;
-            var env = this.env;
-            while (env) {
-                while (env && env.getSvSymbolProcedure() == null)
+            var stackFrame = this.getFirstStackFrame();
+            var i = 0;
+            while (stackFrame) {
+                var env = stackFrame.env();
+                while (env != null && env.getSvSymbolProcedure() == null)
                     env = env.getEnvParent();
-                if (env) {
-                    (function (self) {
-                        var divStackFrame = document.createElement('div');
-                        divStackFrame.classList.add('sicp-stack-frame');
-                        var pTitle = document.createElement('p');
+                (function (self, selfI) {
+                    var divStackFrame = document.createElement('div');
+                    divStackFrame.classList.add('sicp-stack-frame');
+                    var pTitle = document.createElement('p');
+                    if (!env)
+                        pTitle.innerHTML = "&laquo; not in procedure &raquo;";
+                    else
                         pTitle.innerHTML = env.getSvSymbolProcedure().toString();
-                        divStackFrame.appendChild(pTitle);
-                        self.stackTraceElement.appendChild(divStackFrame);
-                    })(this);
-                    env = env.getEnvParentStackFrame();
-                }
+                    $(pTitle).click(function () {
+                        _this.istackFrame = selfI;
+                        _this.updateUI();
+                    });
+                    if (selfI === _this.istackFrame)
+                        pTitle.classList.add('sicp-stack-frame-current');
+                    divStackFrame.appendChild(pTitle);
+                    self.stackTraceElement.appendChild(divStackFrame);
+                })(this, i);
+                stackFrame = stackFrame.parent();
+                i++;
             }
         };
         SicpEditor.prototype.showVariables = function () {
-            var _this = this;
             this.variablesElement.innerHTML = "";
             if (this.isRunning)
                 return;
-            var env = this.env;
+            var stackFrame = this.getCurrentStackFrame();
+            if (!stackFrame)
+                return;
+            var env = stackFrame.env();
             while (env) {
                 (function (self) {
                     var divScope = document.createElement('div');
@@ -157,7 +187,7 @@ var Editor;
                         td1.innerHTML = name;
                         var td2 = document.createElement('td');
                         td1.classList.add('sicp-variable-value');
-                        td2.innerHTML = _this.env.get(name).toString();
+                        td2.innerHTML = env.get(name).toString();
                         tr.appendChild(td1);
                         tr.appendChild(td2);
                     });
@@ -173,33 +203,31 @@ var Editor;
         };
         SicpEditor.prototype.step = function () {
             this.clearMarker();
+            var sv = null;
             try {
-                if (!this.sv)
-                    this.sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
+                if (!this.svBreakPoint)
+                    sv = this.interpreter.evaluateString(this.editor.getValue(), this.log.bind(this));
                 else
-                    this.sv = this.interpreter.step(this.sv, this.isRunning ? 10000 : 1);
+                    sv = this.interpreter.step(this.svBreakPoint, this.isRunning ? 10000 : 1);
             }
             catch (ex) {
                 this.log(ex);
-                this.sv = null;
+                sv = null;
             }
-            if (this.sv == null) {
-                this.isRunning = false;
-                this.env = null;
+            if (sv != null && Sicp.Lang.SvBreakpoint.matches(sv)) {
+                this.svBreakPoint = Sicp.Lang.SvBreakpoint.cast(sv);
+                this.istackFrame = 0;
             }
             else {
-                this.env = Sicp.Lang.SvBreakpoint.env(this.sv);
+                this.svBreakPoint = null;
+                this.isRunning = false;
             }
-            if (!this.isRunning) {
-                this.setMarker(this.sv);
-            }
-            else
+            if (this.isRunning)
                 this.currentTimeout = window.setTimeout(this.step.bind(this), 1);
             this.updateUI();
         };
         SicpEditor.prototype.stop = function () {
-            this.sv = null;
-            this.env = null;
+            this.svBreakPoint = null;
             this.isRunning = false;
             this.clearMarker();
             this.clearOutput();
@@ -225,16 +253,26 @@ var Sicp;
 (function (Sicp) {
     var Lang;
     (function (Lang) {
+        var StackFrame = (function () {
+            function StackFrame(_sv, _env) {
+                this._sv = _sv;
+                this._env = _env;
+            }
+            StackFrame.prototype.sv = function () { return this._sv; };
+            StackFrame.prototype.env = function () { return this._env; };
+            StackFrame.prototype.parent = function () { return this._env.getParentStackFrame(); };
+            return StackFrame;
+        })();
+        Lang.StackFrame = StackFrame;
         var Env = (function () {
-            function Env(envParent, svSymbolProcedure, envParentStackFrame) {
+            function Env(envParent, svSymbolProcedure, parentStackFrame) {
                 if (svSymbolProcedure === void 0) { svSymbolProcedure = null; }
-                if (envParentStackFrame === void 0) { envParentStackFrame = null; }
+                if (parentStackFrame === void 0) { parentStackFrame = null; }
                 this.obj = {};
                 this.envParent = null;
-                this.envParentStackFrame = null;
                 this.envParent = envParent;
                 this.svSymbolProcedure = svSymbolProcedure;
-                this.envParentStackFrame = envParentStackFrame;
+                this.parentStackFrame = parentStackFrame;
             }
             Env.prototype.getNames = function () {
                 var res = [];
@@ -250,8 +288,12 @@ var Sicp;
             Env.prototype.getSvSymbolProcedure = function () {
                 return this.svSymbolProcedure;
             };
-            Env.prototype.getEnvParentStackFrame = function () {
-                return this.envParentStackFrame;
+            Env.prototype.getParentStackFrame = function () {
+                if (this.parentStackFrame)
+                    return this.parentStackFrame;
+                if (this.envParent)
+                    return this.envParent.getParentStackFrame();
+                return null;
             };
             Env.prototype.get = function (name) {
                 if (name in this.obj)
@@ -292,7 +334,7 @@ var Sicp;
             ApplicationEvaluator.prototype.matches = function (sv) {
                 return Sicp.Lang.SvCons.matches(sv);
             };
-            ApplicationEvaluator.evalCall = function (operator, args, envCurrent, cont, evaluator) {
+            ApplicationEvaluator.evalCall = function (operator, args, stackFrameCurrent, cont, evaluator) {
                 if (this.isPrimitiveProcedure(operator)) {
                     return new Sicp.Lang.SvThunk(cont, this.getPrimitiveProcedureDelegate(operator)(args));
                 }
@@ -306,7 +348,7 @@ var Sicp;
                     return this.getContinuationFromCapturedContinuation(operator)(arg);
                 }
                 else if (this.isCompoundProcedure(operator)) {
-                    var newEnv = new Sicp.Lang.Env(this.getProcedureEnv(operator), this.getProcedureSymbol(operator), envCurrent);
+                    var newEnv = new Sicp.Lang.Env(this.getProcedureEnv(operator), this.getProcedureSymbol(operator), stackFrameCurrent);
                     var params = this.getProcedureParameters(operator);
                     while (!Sicp.Lang.SvCons.isNil(args) || !Sicp.Lang.SvCons.isNil(params)) {
                         if (Sicp.Lang.SvCons.isNil(args))
@@ -331,7 +373,7 @@ var Sicp;
                         !ApplicationEvaluator.isCompoundProcedure(operator) &&
                         !ApplicationEvaluator.isContinuation(operator))
                         throw 'undefined procedure ' + ApplicationEvaluator.getOperator(sv).toString();
-                    return _this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env, function (args) { return ApplicationEvaluator.evalCall(operator, args, env, cont, _this.evaluator); });
+                    return _this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env, function (args) { return ApplicationEvaluator.evalCall(operator, args, new Sicp.Lang.StackFrame(sv, env), cont, _this.evaluator); });
                 });
             };
             ApplicationEvaluator.isCompoundProcedure = function (expr) {
@@ -487,7 +529,7 @@ var Sicp;
                 return Sicp.Lang.SvBreakpoint.matches(sv);
             };
             BreakpointEvaluator.prototype.evaluate = function (sv, env, cont) {
-                return new Sicp.Lang.SvThunk(cont, Sicp.Lang.SvBreakpoint.val(sv)());
+                return new Sicp.Lang.SvThunk(cont, Sicp.Lang.SvBreakpoint.cast(sv).val()());
             };
             return BreakpointEvaluator;
         })();
@@ -510,7 +552,7 @@ var Sicp;
                 /* (call-with-current-continuation (lambda (hop) ...)) */
                 return this.evaluator.evaluate(this.getLambda(sv), env, function (lambda) {
                     var args = Sicp.Lang.SvCons.listFromRvs(CallCCEvaluator.createCcProcedure(cont));
-                    return Evaluator.ApplicationEvaluator.evalCall(lambda, args, env, cont, _this.evaluator);
+                    return Evaluator.ApplicationEvaluator.evalCall(lambda, args, new Sicp.Lang.StackFrame(sv, env), cont, _this.evaluator);
                 });
             };
             CallCCEvaluator.prototype.getLambda = function (sv) { return Sicp.Lang.SvCons.cadr(sv); };
@@ -850,7 +892,7 @@ var Sicp;
             Interpreter.prototype.step = function (sv, stepCount) {
                 this.evaluator.setStepCount(stepCount);
                 if (Lang.SvBreakpoint.matches(sv)) {
-                    sv = Lang.SvBreakpoint.val(sv)();
+                    sv = Lang.SvBreakpoint.cast(sv).val()();
                     while (Lang.SvThunk.matches(sv))
                         sv = Lang.SvThunk.call(sv);
                 }
@@ -1070,11 +1112,11 @@ var Sicp;
                     throw "Breakpoint expected";
                 return sv;
             };
-            SvBreakpoint.env = function (sv) {
-                return SvBreakpoint.cast(sv)._env;
+            SvBreakpoint.prototype.env = function () {
+                return this._env;
             };
-            SvBreakpoint.val = function (sv) {
-                return SvBreakpoint.cast(sv)._val;
+            SvBreakpoint.prototype.val = function () {
+                return this._val;
             };
             SvBreakpoint.prototype.toString = function () {
                 return "T(" + this._val.toString() + ")";

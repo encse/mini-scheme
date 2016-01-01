@@ -46,11 +46,11 @@
             return <SvBreakpoint>sv;
         }
 
-        public static env(sv: Sv): Env {
-            return SvBreakpoint.cast(sv)._env;
+        public env(): Env {
+            return this._env;
         } 
-        public static val(sv: Sv): () => Sv {
-            return SvBreakpoint.cast(sv)._val;
+        public val(): () => Sv {
+            return this._val;
         }
 
         public toString(): string {

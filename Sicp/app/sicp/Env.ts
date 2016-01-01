@@ -1,15 +1,23 @@
 module Sicp.Lang {
 
+
+    export class StackFrame {
+        constructor(private _sv: Sicp.Lang.Sv, private _env: Sicp.Lang.Env) {}
+        public sv(): Sicp.Lang.Sv { return this._sv; }
+        public env(): Sicp.Lang.Env { return this._env; }
+        public parent(): StackFrame { return this._env.getParentStackFrame(); }
+    }
+
     export class Env {
         private obj: {[id: string] : Sv} = {};
         private envParent: Env = null;
         private svSymbolProcedure: SvSymbol;
-        private envParentStackFrame: Env = null;
+        private parentStackFrame: StackFrame;
 
-        constructor(envParent: Env, svSymbolProcedure: SvSymbol = null, envParentStackFrame: Env = null) {
+        constructor(envParent: Env, svSymbolProcedure: SvSymbol = null, parentStackFrame: StackFrame = null) {
             this.envParent = envParent;
             this.svSymbolProcedure = svSymbolProcedure;
-            this.envParentStackFrame = envParentStackFrame;
+            this.parentStackFrame = parentStackFrame;
         }
 
         public getNames(): string[] {
@@ -29,8 +37,12 @@ module Sicp.Lang {
             return this.svSymbolProcedure;
         }
 
-        public getEnvParentStackFrame(): Env {
-            return this.envParentStackFrame;
+        public getParentStackFrame(): StackFrame {
+            if (this.parentStackFrame)
+                return this.parentStackFrame;
+            if (this.envParent)
+                return this.envParent.getParentStackFrame();
+            return null;
         }
 
         public get(name: string):Sv {

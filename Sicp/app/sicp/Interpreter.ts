@@ -66,7 +66,7 @@ module Sicp.Lang {
             this.evaluator.setStepCount(stepCount);
 
             if (Lang.SvBreakpoint.matches(sv)) {
-                sv = Lang.SvBreakpoint.val(sv)();
+                sv = Lang.SvBreakpoint.cast(sv).val()();
                 while (Lang.SvThunk.matches(sv))
                     sv = Lang.SvThunk.call(sv);
             }
