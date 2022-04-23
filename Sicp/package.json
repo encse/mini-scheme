@@ -1,15 +1,32 @@
 {
-  "name": "sicp",
-  "version": "1.0.0",
-  "description": "",
-  "main": "",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "ace-editor-builds": "^1.2.0",
-    "requirejs": "^2.1.22"
-  }
-}
+    "name": "sicp",
+    "version": "1.0.0",
+    "description": "",
+    "keywords": [],
+    "main": "src/index.js",
+    "dependencies": {
+      "@types/node": "16.11.27",
+      "@types/react": "16.8.6",
+      "@types/react-dom": "16.8.5",
+      "react": "16.8.6",
+      "react-ace": "7.0.2",
+      "react-dom": "16.8.6",
+      "react-scripts": "3.0.1",
+      "typescript": "^4.6.3",
+      "web-vitals": "^2.1.4"
+    },
+    "devDependencies": {
+      "typescript": "4.6.3"
+    },
+    "scripts": {
+      "start": "react-scripts start",
+      "build": "react-scripts build && rm -rf docs && mv build docs",
+      "eject": "react-scripts eject"
+    },
+    "browserslist": [
+      ">0.2%",
+      "not dead",
+      "not ie <= 11",
+      "not op_mini all"
+    ]
+} 
