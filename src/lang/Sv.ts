@@ -1,5 +1,5 @@
-﻿import { Env } from "../../Env";
-import { Cont } from "../../IEvaluator";
+﻿import { Env } from "../Env";
+import { Cont } from "../IEvaluator";
 import { ISourceInfo } from "./Parser";
 
 export class Sv implements ISourceInfo {

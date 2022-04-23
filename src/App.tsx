@@ -4,10 +4,10 @@ import AceEditor from "react-ace";
 import "./App.css";
 import "brace/mode/typescript";
 import "brace/theme/tomorrow_night";
-import { Interpreter } from './sicp/Interpreter';
-import { Sv, SvBreakpoint } from './sicp/lang/Sv';
+import { Interpreter } from './Interpreter';
+import { Sv, SvBreakpoint } from './lang/Sv';
 import { IMarker } from 'react-ace/lib/types';
-import { StackFrame } from './sicp/Env';
+import { StackFrame } from './Env';
 
 type SampleProps = {
     samples: string[],
