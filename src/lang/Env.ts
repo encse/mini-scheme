@@ -1,4 +1,4 @@
-import { Sv, SvSymbol } from "./lang/Sv";
+import { Sv, SvSymbol } from "./Sv";
 
 export class StackFrame {
     constructor(private _sv: Sv, private _env: Env) {}

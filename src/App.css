@@ -25,17 +25,25 @@ form, .form {
     text-align: center;
 }
 
-input[type=text] {
-    width: 300px;
-    font-size: 21px;
-    font-family: arial;
-    padding: 3px;
+button {
+    -webkit-appearance:none;
+    background: lightgray;
+    color: inherit;
+    border: 1px solid gray;
+    padding: 0;
+    cursor: pointer;
+    outline: none;
 }
 
-input[type=submit], input[type=button] {
-    width: 100px;
-    font-size: 22px;
-    font-family: arial;
+select {
+    -webkit-appearance:none;
+    -webkit-border-radius: 0;
+    background: white;
+    color: inherit;
+    border: 1px solid gray;
+    padding: 0;
+    cursor: pointer;
+    outline: none;
 }
 
 

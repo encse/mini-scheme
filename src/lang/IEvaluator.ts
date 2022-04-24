@@ -1,5 +1,5 @@
 import { Env } from "./Env";
-import { Sv } from "./lang/Sv";
+import { Sv } from "./Sv";
 
 export type Cont = (sv: Sv) => Sv;
 

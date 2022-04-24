@@ -1,6 +1,6 @@
-import { Env } from "../Env";
-import { IEvaluator, Cont } from "../IEvaluator";
-import { Sv, SvBreakpoint, SvCons, SvThunk, SvSymbol } from "../lang/Sv";
+import { Env } from "./Env";
+import { IEvaluator, Cont } from "./IEvaluator";
+import { Sv, SvBreakpoint, SvCons, SvThunk, SvSymbol } from "./Sv";
 
 export default class BaseEvaluator implements IEvaluator {
     private stepCount: number = 1;

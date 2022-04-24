@@ -1,6 +1,6 @@
-import { Env } from "../Env";
-import { IEvaluator, Cont } from "../IEvaluator";
-import { Sv, SvSymbol, SvThunk, SvCons, SvAny } from "../lang/Sv";
+import { Env } from "./Env";
+import { IEvaluator, Cont } from "./IEvaluator";
+import { Sv, SvSymbol, SvThunk, SvCons, SvAny } from "./Sv";
 import BaseEvaluator from "./BaseEvaluator";
 
 export default class LambdaEvaluator implements IEvaluator {

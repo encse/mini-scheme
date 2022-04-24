@@ -1,6 +1,6 @@
-import { Env } from "../Env";
-import { IEvaluator, Cont } from "../IEvaluator";
-import { Sv, SvString, SvBool, SvNumber, SvCons, SvThunk } from "../lang/Sv";
+import { Env } from "./Env";
+import { IEvaluator, Cont } from "./IEvaluator";
+import { Sv, SvString, SvBool, SvNumber, SvCons, SvThunk } from "./Sv";
 
 export default class SelfEvaluator implements IEvaluator {
     public matches(node: Sv): boolean {

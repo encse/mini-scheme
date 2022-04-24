@@ -1,5 +1,5 @@
-﻿import { Env } from "../Env";
-import { Cont } from "../IEvaluator";
+﻿import { Env } from "./Env";
+import { Cont } from "./IEvaluator";
 import { ISourceInfo } from "./Parser";
 
 export class Sv implements ISourceInfo {
@@ -202,7 +202,7 @@ export class SvAny extends Sv {
     }
 
     public toDisplayString(): string {
-        return '';
+        return '[any]';
     }
     public toString(): string {
         return this._val.toString();
@@ -330,7 +330,7 @@ export class SvSymbol extends Sv {
 
     public static cast(sv: Sv): SvSymbol {
         if (!SvSymbol.matches(sv)) throw "Symbol expected";
-        return <SvSymbol>sv;
+        return sv as SvSymbol;
     }
 
     public toDisplayString(): string {

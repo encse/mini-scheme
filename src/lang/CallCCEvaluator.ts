@@ -1,6 +1,6 @@
-import { Env, StackFrame } from "../Env";
-import { IEvaluator, Cont } from "../IEvaluator";
-import { Sv, SvCons, SvSymbol, SvAny } from "../lang/Sv";
+import { Env, StackFrame } from "./Env";
+import { IEvaluator, Cont } from "./IEvaluator";
+import { Sv, SvCons, SvSymbol, SvAny } from "./Sv";
 import ApplicationEvaluator from "./ApplicationEvaluator";
 import BaseEvaluator from "./BaseEvaluator";
 

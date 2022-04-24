@@ -1,6 +1,6 @@
-import { Env } from "../Env";
-import { IEvaluator, Cont } from "../IEvaluator";
-import { Sv, SvCons, SvSymbol, SvThunk } from "../lang/Sv";
+import { Env } from "./Env";
+import { IEvaluator, Cont } from "./IEvaluator";
+import { Sv, SvCons, SvSymbol, SvThunk } from "./Sv";
 import BaseEvaluator from "./BaseEvaluator";
 import LambdaEvaluator from "./LambdaEvaluator";
 
@@ -15,7 +15,8 @@ export default class DefineEvaluator implements IEvaluator {
 
         if (SvCons.matches(this.getHead(sv))) {
             //implicit lambda definition
-            var lambda = LambdaEvaluator.createCompoundProcedure(<SvSymbol>this.getFunctionName(sv), this.getLambdaParameters(sv), this.getLambdaBody(sv), env);
+            var lambda = LambdaEvaluator.createCompoundProcedure(
+                this.getFunctionName(sv) as SvSymbol, this.getLambdaParameters(sv), this.getLambdaBody(sv), env);
             env.define(
                 SvSymbol.val(this.getFunctionName(sv)),
                 lambda);

@@ -1,6 +1,6 @@
-import { StackFrame, Env } from "../Env";
-import { IEvaluator, Cont } from "../IEvaluator";
-import { Sv, SvCons, SvThunk, SvSymbol, SvAny } from "../lang/Sv";
+import { StackFrame, Env } from "./Env";
+import { IEvaluator, Cont } from "./IEvaluator";
+import { Sv, SvCons, SvThunk, SvSymbol, SvAny } from "./Sv";
 import BaseEvaluator from "./BaseEvaluator";
 
 export default class ApplicationEvaluator implements IEvaluator {
@@ -20,7 +20,7 @@ export default class ApplicationEvaluator implements IEvaluator {
             let arg: Sv = SvCons.Nil;
             if (!SvCons.isNil(args)) {
                 if (!SvCons.isNil(SvCons.cdr(args)))
-                    throw 'too many argument';
+                    throw new Error('too many arguments');
                 arg = SvCons.car(args);
             }
             return this.getContinuationFromCapturedContinuation(operator)(arg);
@@ -31,9 +31,9 @@ export default class ApplicationEvaluator implements IEvaluator {
 
             while (!SvCons.isNil(args) || !SvCons.isNil(params)) {
                 if (SvCons.isNil(args))
-                    throw 'not enough argument';
+                    throw new Error('not enough argument');
                 if (SvCons.isNil(params))
-                    throw 'too many argument';
+                    throw new Error('too many arguments');
                 const parameter = SvSymbol.val(SvCons.car(params));
                 const arg = SvCons.car(args);
                 newEnv.define(parameter, arg);
@@ -44,7 +44,7 @@ export default class ApplicationEvaluator implements IEvaluator {
             return evaluator.evaluateList(this.getProcedureBody(operator), newEnv, cont);
         }
         else
-            throw 'undefined procedure' + operator.toString();
+            throw new Error('undefined procedure ' + operator.toString());
     }
         
 
@@ -54,7 +54,7 @@ export default class ApplicationEvaluator implements IEvaluator {
             if (!ApplicationEvaluator.isPrimitiveProcedure(operator) &&
                 !ApplicationEvaluator.isCompoundProcedure(operator) &&
                 !ApplicationEvaluator.isContinuation(operator))
-                throw 'undefined procedure ' + ApplicationEvaluator.getOperator(sv).toString();
+                throw new Error('undefined procedure ' + ApplicationEvaluator.getOperator(sv).toString());
 
             return this.evaluateArgs(ApplicationEvaluator.getArguments(sv), env,
                 args => ApplicationEvaluator.evalCall(operator, args, new StackFrame(sv, env), cont, this.evaluator));
