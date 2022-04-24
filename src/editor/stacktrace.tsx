@@ -26,7 +26,7 @@ export const Stacktrace: React.FC<StacktraceProps> = (props) => {
         while (env != null && env.getSvSymbolProcedure() == null)
             env = env.getEnvParent();
 
-        let msg = "(anonymous)";
+        let msg = "(«lambda»)";
         if (env != null){
             msg = '('+env.getSvSymbolProcedure().toString();
             for(let param of env.getNames()) {

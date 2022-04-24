@@ -32,7 +32,7 @@ export const Scopes: React.FC<ScopesProps> = (props) => {
                     }
                 </div>
             }
-            {env.getNames().length === 0 && <p className="sicp-scope-empty">« empty »</p>}
+            {env.getNames().length === 0 && <p className="sicp-scope-empty">«empty»</p>}
         </div>
         );
         env = env.getEnvParent();

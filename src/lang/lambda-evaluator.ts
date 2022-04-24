@@ -13,7 +13,7 @@ export default class LambdaEvaluator implements IEvaluator {
 
     public evaluate(sv: Sv, env: Env, cont: Cont): Sv {
         var proc = DefineEvaluator.makeProc(
-            new SvSymbol("lambda"),
+            new SvSymbol("«lambda»"),
             env, 
             LambdaEvaluator.getLambdaParameters(sv),
             LambdaEvaluator.getLambdaBody(sv),
