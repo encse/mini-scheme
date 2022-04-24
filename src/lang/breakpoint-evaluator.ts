@@ -1,7 +1,7 @@
-import { Env } from "./Env";
-import { IEvaluator, Cont } from "./IEvaluator";
-import { Sv, SvBreakpoint, SvThunk } from "./Sv";
-import BaseEvaluator from "./BaseEvaluator";
+import { Env } from "./env";
+import { IEvaluator, Cont } from "./ievaluator";
+import { Sv, SvBreakpoint, SvThunk } from "./sv";
+import BaseEvaluator from "./base-evaluator";
 
     
 export default class BreakpointEvaluator implements IEvaluator {

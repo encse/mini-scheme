@@ -1,7 +1,7 @@
-import { Env } from "./Env";
-import { IEvaluator, Cont } from "./IEvaluator";
-import { Sv, SvCons, SvThunk, SvBool } from "./Sv";
-import BaseEvaluator from "./BaseEvaluator";
+import { Env } from "./env";
+import { IEvaluator, Cont } from "./ievaluator";
+import { Sv, SvCons, SvThunk, SvBool } from "./sv";
+import BaseEvaluator from "./base-evaluator";
 
 export default class CondEvaluator implements IEvaluator {
     constructor(private evaluator: BaseEvaluator) { }

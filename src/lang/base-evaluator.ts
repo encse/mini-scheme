@@ -1,6 +1,6 @@
-import { Env } from "./Env";
-import { IEvaluator, Cont } from "./IEvaluator";
-import { Sv, SvBreakpoint, SvCons, SvThunk, SvSymbol } from "./Sv";
+import { Env } from "./env";
+import { IEvaluator, Cont } from "./ievaluator";
+import { Sv, SvBreakpoint, SvCons, SvThunk, SvSymbol } from "./sv";
 
 export default class BaseEvaluator implements IEvaluator {
     private stepCount: number = 1;
@@ -25,14 +25,14 @@ export default class BaseEvaluator implements IEvaluator {
         for (var i = 0; i < this.evaluators.length;i++) {
             if (this.evaluators[i].matches(sv)) {
                 this.step++;
-                if (this.step % this.stepCount == 0)
+                if (this.step % this.stepCount === 0)
                     return new SvBreakpoint(() => this.evaluators[i].evaluate(sv, env, cont), env).withSourceInfo(sv, sv);
                 else
                     return this.evaluators[i].evaluate(sv, env, cont);
 
             }
         }
-        throw 'cannot evaluate ' + sv.toString();
+        throw new Error('cannot evaluate ' + sv.toString());
     }
 
     public evaluateList(exprs: Sv, env: Env, cont: Cont): Sv {

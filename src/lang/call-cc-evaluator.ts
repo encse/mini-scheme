@@ -1,8 +1,8 @@
-import { Env, StackFrame } from "./Env";
-import { IEvaluator, Cont } from "./IEvaluator";
-import { Sv, SvCons, SvSymbol, SvAny } from "./Sv";
-import ApplicationEvaluator from "./ApplicationEvaluator";
-import BaseEvaluator from "./BaseEvaluator";
+import { Env, StackFrame } from "./env";
+import { IEvaluator, Cont } from "./ievaluator";
+import { Sv, SvCons, SvSymbol, SvAny } from "./sv";
+import ApplicationEvaluator from "./application-evaluator";
+import BaseEvaluator from "./base-evaluator";
 
 export default class CallCCEvaluator implements IEvaluator {
 

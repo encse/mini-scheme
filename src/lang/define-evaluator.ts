@@ -1,8 +1,8 @@
-import { Env } from "./Env";
-import { IEvaluator, Cont } from "./IEvaluator";
-import { Sv, SvCons, SvSymbol, SvThunk } from "./Sv";
-import BaseEvaluator from "./BaseEvaluator";
-import LambdaEvaluator from "./LambdaEvaluator";
+import { Env } from "./env";
+import { IEvaluator, Cont } from "./ievaluator";
+import { Sv, SvCons, SvSymbol, SvThunk } from "./sv";
+import BaseEvaluator from "./base-evaluator";
+import LambdaEvaluator from "./lambda-evaluator";
 
 export default class DefineEvaluator implements IEvaluator {
     constructor(private evaluator: BaseEvaluator) {  }

@@ -1,20 +1,20 @@
-import { Env } from "./Env";
-import { Parser } from "./Parser";
-import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvThunk } from "./Sv";
-import BaseEvaluator from "./BaseEvaluator";
-import ApplicationEvaluator from "./ApplicationEvaluator";
-import BeginEvaluator from "./BeginEvaluator";
-import BreakpointEvaluator from "./BreakpointEvaluator";
-import CallCCEvaluator from "./CallCCEvaluator";
-import CondEvaluator from "./CondEvaluator";
-import DefineEvaluator from "./DefineEvaluator";
-import IfEvaluator from "./IfEvaluator";
-import LambdaEvaluator from "./LambdaEvaluator";
-import LetEvaluator from "./LetEvaluator";
-import QuoteEvaluator from "./QuoteEvaluator";
-import SelfEvaluator from "./SelfEvaluator";
-import VariableEvaluator from "./VariableEvaluator";
-import AssignmentEvaluator from "./AssignmentEvaluator";
+import { Env } from "./env";
+import { Parser } from "./parser";
+import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvThunk } from "./sv";
+import BaseEvaluator from "./base-evaluator";
+import ApplicationEvaluator from "./application-evaluator";
+import BeginEvaluator from "./begin-evaluator";
+import BreakpointEvaluator from "./breakpoint-evaluator";
+import CallCCEvaluator from "./call-cc-evaluator";
+import CondEvaluator from "./cond-evaluator";
+import DefineEvaluator from "./define-evaluator";
+import IfEvaluator from "./if-evaluator";
+import LambdaEvaluator from "./lambda-evaluator";
+import LetEvaluator from "./let-evaluator";
+import QuoteEvaluator from "./quote-evaluator";
+import SelfEvaluator from "./self-evaluator";
+import VariableEvaluator from "./variable-evaluator";
+import AssignmentEvaluator from "./assignment-evaluator";
 
 export class Interpreter {
 

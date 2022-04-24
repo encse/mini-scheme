@@ -1,7 +1,7 @@
-import { Env } from "./Env";
-import { IEvaluator, Cont } from "./IEvaluator";
-import { Sv, SvCons, SvSymbol } from "./Sv";
-import BaseEvaluator from "./BaseEvaluator";
+import { Env } from "./env";
+import { IEvaluator, Cont } from "./ievaluator";
+import { Sv, SvCons, SvSymbol } from "./sv";
+import BaseEvaluator from "./base-evaluator";
 
 export default class LetEvaluator implements IEvaluator {
     constructor(private evaluator: BaseEvaluator) { }
@@ -66,7 +66,7 @@ export default class LetEvaluator implements IEvaluator {
             return loop(newEnv, LetEvaluator.getDefs(sv));
         }
         else
-            throw 'uknown let kind';
+            throw new Error('uknown let kind');
 
         
     }

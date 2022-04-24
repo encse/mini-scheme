@@ -1,6 +1,6 @@
-﻿import { Env } from "./Env";
-import { Cont } from "./IEvaluator";
-import { ISourceInfo } from "./Parser";
+﻿import { Env } from "./env";
+import { Cont } from "./ievaluator";
+import { ISourceInfo } from "./parser";
 
 export class Sv implements ISourceInfo {
 
@@ -32,11 +32,11 @@ export class SvThunk extends Sv {
     public static matches(node: Sv) { return node instanceof SvThunk; }
 
     public static cast(sv: Sv): SvThunk {
-        if (!SvThunk.matches(sv)) throw "Breakpoint expected";
-        return <SvThunk>sv;
+        if (!SvThunk.matches(sv)) throw new Error("Breakpoint expected");
+        return sv as SvThunk;
     }
     public static call(sv: Sv) {
-        return SvThunk.cast(sv).cont((<SvThunk>sv).val);
+        return SvThunk.cast(sv).cont((sv as SvThunk).val);
     }
 }
 export class SvBreakpoint extends Sv {
@@ -45,8 +45,8 @@ export class SvBreakpoint extends Sv {
     public static matches(node: Sv): node is SvBreakpoint { return node instanceof SvBreakpoint; }
 
     public static cast(sv: Sv): SvBreakpoint {
-        if (!SvBreakpoint.matches(sv)) throw "Breakpoint expected";
-        return <SvBreakpoint>sv;
+        if (!SvBreakpoint.matches(sv)) throw new Error("Breakpoint expected");
+        return sv as SvBreakpoint;
     }
 
     public env(): Env {
@@ -95,8 +95,8 @@ export class SvCons extends Sv {
     }
 
     public static cast(sv: Sv): SvCons {
-        if (!SvCons.matches(sv)) throw "Cons expected";
-        return <SvCons>sv;
+        if (!SvCons.matches(sv)) throw new Error("Cons expected");
+        return sv as SvCons;
     }
 
     public static car(node: Sv) {
@@ -197,8 +197,8 @@ export class SvAny extends Sv {
     }
 
     public static cast(sv: Sv): SvAny {
-        if (!SvAny.matches(sv)) throw "any expected";
-        return <SvAny>sv;
+        if (!SvAny.matches(sv)) throw new Error("any expected");
+        return sv as SvAny;
     }
 
     public toDisplayString(): string {
@@ -229,8 +229,8 @@ export class SvBool extends Sv {
     }
 
     public static cast(sv: Sv): SvBool {
-        if (!SvBool.matches(sv)) throw "bool expected";
-        return <SvBool>sv;
+        if (!SvBool.matches(sv)) throw new Error("bool expected");
+        return sv as SvBool;
     }
 
     public toDisplayString(): string {
@@ -282,8 +282,8 @@ export class SvString extends Sv {
     }
 
     public static cast(sv: Sv): SvString {
-        if (!SvString.matches(sv)) throw "string expected";
-        return <SvString>sv;
+        if (!SvString.matches(sv)) throw new Error("string expected");
+        return sv as SvString;
     }
 
     public toDisplayString(): string {
@@ -305,8 +305,8 @@ export class SvNumber extends Sv {
     }
 
     public static cast(sv: Sv): SvNumber {
-        if (!SvNumber.matches(sv)) throw "Number expected";
-        return <SvNumber>sv;
+        if (!SvNumber.matches(sv)) throw new Error("Number expected");
+        return sv as SvNumber;
     }
 
     public toDisplayString(): string {
@@ -329,7 +329,7 @@ export class SvSymbol extends Sv {
     }
 
     public static cast(sv: Sv): SvSymbol {
-        if (!SvSymbol.matches(sv)) throw "Symbol expected";
+        if (!SvSymbol.matches(sv)) throw new Error("Symbol expected");
         return sv as SvSymbol;
     }
 

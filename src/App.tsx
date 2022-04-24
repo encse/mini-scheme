@@ -1,7 +1,7 @@
 import React from 'react';
 
-import "./App.css";
-import Editor from './editor/editor';
+import "./app.css";
+import {Editor} from './editor/editor';
 
 const samples = [
     'samples/factorial.ms',
@@ -21,7 +21,7 @@ function App() {
                 <h2>Mini scheme</h2>
                 <p>by <a href="https://csokavar.hu">encse</a></p>
             </div>
-            <Editor samples={samples}/>
+            <Editor sampleUrls={samples}/>
             <div id="footer">Copyright 2015, source is available on <a href="https://github.com/encse/sicp">GitHub</a></div>
         </>
     );

@@ -1,7 +1,7 @@
-import { StackFrame, Env } from "./Env";
-import { IEvaluator, Cont } from "./IEvaluator";
-import { Sv, SvCons, SvThunk, SvSymbol, SvAny } from "./Sv";
-import BaseEvaluator from "./BaseEvaluator";
+import { StackFrame, Env } from "./env";
+import { IEvaluator, Cont } from "./ievaluator";
+import { Sv, SvCons, SvThunk, SvSymbol, SvAny } from "./sv";
+import BaseEvaluator from "./base-evaluator";
 
 export default class ApplicationEvaluator implements IEvaluator {
 

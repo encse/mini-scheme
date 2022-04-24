@@ -1,9 +1,22 @@
-﻿import { SvCons, Sv, SvSymbol, SvBool, SvNumber, SvString } from "./Sv";
+﻿import { SvCons, Sv, SvSymbol, SvBool, SvNumber, SvString } from "./sv";
+
+enum TokenKind {
+    WhiteSpace,
+    BooleanLit,
+    LParen,
+    RParen,
+    Symbol,
+    NumberLit,
+    Quote,
+    StringLit,
+    Comment,
+    EOF
+}
 
 export class Parser {
     private regexSymbol = /^[^\s()',]+/;
     private regexNumber = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/;
-    private regexString = /^"([^\\\"]+|\\.)*"/;
+    private regexString = /^"([^\\"]+|\\.)*"/;
     private regexWhiteSpace = /^\s*/;
     private regexBoolean = /^#t|^#f/;
     private regexComment = /^;.*/;
@@ -49,7 +62,7 @@ export class Parser {
         if (this.accept(tokenKind))
             return true;
         else
-            throw 'expected ' + tokenKind + ' found ' + this.currentToken().kind;
+            throw new Error('expected ' + tokenKind + ' found ' + this.currentToken().kind);
     }
 
     public parseExpression(): Sv {
@@ -74,7 +87,7 @@ export class Parser {
             while (!this.accept(TokenKind.RParen)) {
 
                 if (this.accept(TokenKind.EOF))
-                    throw "unexpected end of input";
+                    throw new Error("unexpected end of input");
 
                 exprs.push(this.parseExpression());
             }
@@ -83,7 +96,7 @@ export class Parser {
             return SvCons.listFromRvArray(exprs).withSourceInfo(tokenStart, tokenEnd);
         }
 
-        throw "invalid token " + token;
+        throw new Error("invalid token " + token);
     }
 
     private getTokens(st: string): Token[] {
@@ -113,11 +126,11 @@ export class Parser {
             else if (this.regexWhiteSpace.test(st))
                 token = new Token(TokenKind.WhiteSpace, this.regexWhiteSpace.exec(st)[0], iline, icol);
             else
-                throw "invalid token at '" + st + "'";
+                throw new Error("invalid token at '" + st + "'");
             tokens.push(token);
 
             if (token.st.length === 0)
-                throw "invalid token";
+                throw new Error("invalid token");
             st = st.substr(token.st.length);
             iline = token.ilineEnd;
             icol = token.icolEnd;
@@ -135,18 +148,7 @@ export interface ISourceInfo {
     icolEnd:number;
 }
 
-enum TokenKind {
-    WhiteSpace,
-    BooleanLit,
-    LParen,
-    RParen,
-    Symbol,
-    NumberLit,
-    Quote,
-    StringLit,
-    Comment,
-    EOF
-}
+
 
 class Token implements ISourceInfo {
     public ilineEnd: number;

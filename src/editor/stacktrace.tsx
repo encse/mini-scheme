@@ -1,6 +1,6 @@
 import React from 'react';
-import { StackFrame } from "../lang/Env";
-import { SvBreakpoint } from "../lang/Sv";
+import { StackFrame } from "../lang/env";
+import { SvBreakpoint } from "../lang/sv";
 import { DebuggerState } from "./debugger-state";
 
 export type StacktraceProps = {
@@ -24,7 +24,7 @@ export const Stacktrace: React.FC<StacktraceProps> = (props) => {
         while (env != null && env.getSvSymbolProcedure() == null)
             env = env.getEnvParent();
 
-        const classes = 'sicp-stack-frame ' + ((currentStackFrame == debuggerState.currentStackFrameIndex) ? 'sicp-stack-frame-current' : '');
+        const classes = 'sicp-stack-frame ' + ((currentStackFrame === debuggerState.currentStackFrameIndex) ? 'sicp-stack-frame-current' : '');
         frameElements.push(
             <div className={classes} key={stackFrameIndex} onClick={() => props.onStackFrameSelect(currentStackFrame)}>
                 <p>{!env ? "« not in procedure »" : env.getSvSymbolProcedure().toString()}</p>

@@ -1,4 +1,4 @@
-import { Sv, SvSymbol } from "./Sv";
+import { Sv, SvSymbol } from "./sv";
 
 export class StackFrame {
     constructor(private _sv: Sv, private _env: Env) {}
@@ -48,7 +48,7 @@ export class Env {
         if (name in this.obj)
             return this.obj[name];
         if (this.envParent == null)
-            throw "no binding for " + name;
+            throw new Error("no binding for " + name);
         return this.envParent.get(name);
     }
 
@@ -56,14 +56,14 @@ export class Env {
         if (name in this.obj)
             this.obj[name] = rv;
         else if (this.envParent == null)
-            throw name + " is not declared";
+            throw new Error(name + " is not declared");
         else
             this.envParent.set(name, rv);
     }
 
     public define(name: string, value: Sv) {
         if (name in this.obj)
-            throw name + ' is already defined';
+            throw new Error(name + ' is already defined');
         this.obj[name] = value;
     }
 
