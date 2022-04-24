@@ -1,7 +1,8 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvSymbol, SvContinuable, SvCons, SvAny } from "./sv";
+import { Sv, SvSymbol, SvContinuable, SvCons, SvAny, SvProcedure } from "./sv";
 import BaseEvaluator from "./base-evaluator";
+import DefineEvaluator from "./define-evaluator";
 
 export default class LambdaEvaluator implements IEvaluator {
     constructor(private evaluator: BaseEvaluator) {  }
@@ -11,22 +12,16 @@ export default class LambdaEvaluator implements IEvaluator {
     }
 
     public evaluate(sv: Sv, env: Env, cont: Cont): Sv {
-        var proc = LambdaEvaluator.createCompoundProcedure(
+        var proc = DefineEvaluator.makeProc(
             new SvSymbol("lambda"),
+            env, 
             LambdaEvaluator.getLambdaParameters(sv),
             LambdaEvaluator.getLambdaBody(sv),
-            env);
+        );
         return new SvContinuable(cont, proc);
     }
 
-    public static createCompoundProcedure(name:SvSymbol, params: Sv, body: Sv, env: Env):Sv {
-        return SvCons.listFromRvs(
-            new SvSymbol('procedure'),
-            name,
-            params,
-            body,
-            new SvAny(env));
-    }
+    
     public static getLambdaParameters(expr: Sv) { return SvCons.cadr(expr); }
     public static getLambdaBody(expr: Sv) { return SvCons.cddr(expr); }
 

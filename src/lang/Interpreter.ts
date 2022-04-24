@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { Parser } from "./parser";
-import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvContinuable } from "./sv";
+import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvContinuable, SvProcedure } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 import ApplicationEvaluator from "./application-evaluator";
 import BeginEvaluator from "./begin-evaluator";
@@ -24,35 +24,46 @@ export class Interpreter {
         let parser = new Parser();
         let exprs = parser.parse(st);
         let env = new Env(null);
-        env.define('cons', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvCons(SvCons.car(args), SvCons.cadr(args)))));
-        env.define('null?', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.fromBoolean(SvCons.isNil(SvCons.car(args))))));
-        env.define('car', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvCons.car(SvCons.car(args)))));
-        env.define('cadr', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvCons.cadr(SvCons.car(args)))));
-        env.define('cdr', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvCons.cdr(SvCons.car(args)))));
-        env.define('=', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.fromBoolean(SvNumber.val(SvCons.car(args)) === SvNumber.val(SvCons.cadr(args))))));
-        env.define('>', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.fromBoolean(SvNumber.val(SvCons.car(args)) > SvNumber.val(SvCons.cadr(args))))));
-        env.define('<', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.fromBoolean(SvNumber.val(SvCons.car(args)) < SvNumber.val(SvCons.cadr(args))))));
-        env.define('*', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) * SvNumber.val(SvCons.cadr(args))))));
-        env.define('-', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) - SvNumber.val(SvCons.cadr(args))))));
-        env.define('+', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) + SvNumber.val(SvCons.cadr(args))))));
-        env.define('/', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(SvNumber.val(SvCons.car(args)) / SvNumber.val(SvCons.cadr(args))))));
-        env.define('min', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(Math.min(SvNumber.val(SvCons.car(args)), SvNumber.val(SvCons.cadr(args)))))));
-        env.define('max', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(Math.max(SvNumber.val(SvCons.car(args)), SvNumber.val(SvCons.cadr(args)))))));
-        env.define('abs', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => new SvNumber(Math.abs(SvNumber.val(SvCons.car(args)))))));
-        env.define('zero?', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.fromBoolean(SvNumber.val(SvCons.car(args)) === 0))));
-        env.define('length', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvCons.lengthI(SvCons.car(args)))));
-        env.define('not', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.not(SvCons.car(args)))));
-        env.define('and', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.and(args))));
-        env.define('or', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => SvBool.or(args))));
-        env.define('display', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
+
+        const makeProc = (name: string, body: (args: Sv) => Sv) => {
+            env.define(name,
+                new SvProcedure(
+                    new SvSymbol(name),
+                    (args, _, __, cont) => {
+                        return new SvContinuable(cont, body(args))
+                    }
+                ));
+        };
+
+        makeProc('cons', (args: Sv) => new SvCons(SvCons.car(args), SvCons.cadr(args)));
+        makeProc('null?', (args: Sv) => SvBool.fromBoolean(SvCons.isNil(SvCons.car(args))));
+        makeProc('car', (args: Sv) => SvCons.car(SvCons.car(args)));
+        makeProc('cadr', (args: Sv) => SvCons.cadr(SvCons.car(args)));
+        makeProc('cdr', (args: Sv) => SvCons.cdr(SvCons.car(args)));
+        makeProc('=', (args: Sv) => SvBool.fromBoolean(SvNumber.val(SvCons.car(args)) === SvNumber.val(SvCons.cadr(args))));
+        makeProc('>', (args: Sv) => SvBool.fromBoolean(SvNumber.val(SvCons.car(args)) > SvNumber.val(SvCons.cadr(args))));
+        makeProc('<', (args: Sv) => SvBool.fromBoolean(SvNumber.val(SvCons.car(args)) < SvNumber.val(SvCons.cadr(args))));
+        makeProc('*', (args: Sv) => new SvNumber(SvNumber.val(SvCons.car(args)) * SvNumber.val(SvCons.cadr(args))));
+        makeProc('-', (args: Sv) => new SvNumber(SvNumber.val(SvCons.car(args)) - SvNumber.val(SvCons.cadr(args))));
+        makeProc('+', (args: Sv) => new SvNumber(SvNumber.val(SvCons.car(args)) + SvNumber.val(SvCons.cadr(args))));
+        makeProc('/', (args: Sv) => new SvNumber(SvNumber.val(SvCons.car(args)) / SvNumber.val(SvCons.cadr(args))));
+        makeProc('min', (args: Sv) => new SvNumber(Math.min(SvNumber.val(SvCons.car(args)), SvNumber.val(SvCons.cadr(args)))));
+        makeProc('max', (args: Sv) => new SvNumber(Math.max(SvNumber.val(SvCons.car(args)), SvNumber.val(SvCons.cadr(args)))));
+        makeProc('abs', (args: Sv) => new SvNumber(Math.abs(SvNumber.val(SvCons.car(args)))));
+        makeProc('zero?', (args: Sv) => SvBool.fromBoolean(SvNumber.val(SvCons.car(args)) === 0));
+        makeProc('length', (args: Sv) => SvCons.lengthI(SvCons.car(args)));
+        makeProc('not', (args: Sv) => SvBool.not(SvCons.car(args)));
+        makeProc('and', (args: Sv) => SvBool.and(args));
+        makeProc('or', (args: Sv) => SvBool.or(args));
+        makeProc('display', (args: Sv) => {
             while (!SvCons.isNil(args)) {
                 log(SvCons.car(args).toDisplayString());
                 args = SvCons.cdr(args);
             }
             return SvCons.Nil;
-        })));
+        });
 
-        env.define('ask', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
+        makeProc('ask', (args: Sv) => {
             let msg = "";
             while (!SvCons.isNil(args)) {
                 msg += SvCons.car(args).toDisplayString();
@@ -63,7 +74,7 @@ export class Interpreter {
             const answer = parseInt(prompt(msg), 10);
             log(answer + "\n");
             return new SvNumber(answer);
-        })));
+        });
 
         this.evaluator = new BaseEvaluator();
         this.evaluator.setEvaluators([
@@ -89,7 +100,7 @@ export class Interpreter {
     }
 
     public step(sv: Sv, stepCount: number): Sv {
-    
+
         this.evaluator.setStepCount(stepCount);
 
         if (SvBreakpoint.matches(sv)) {
@@ -97,7 +108,7 @@ export class Interpreter {
             while (SvContinuable.matches(sv))
                 sv = SvContinuable.call(sv);
         }
-    
+
         return SvBreakpoint.matches(sv) ? sv : null;
     }
 

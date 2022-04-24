@@ -1,8 +1,7 @@
-import { Env } from "./env";
+import { Env, StackFrame } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvCons, SvSymbol, SvContinuable } from "./sv";
+import { Sv, SvCons, SvSymbol, SvContinuable, SvProcedure } from "./sv";
 import BaseEvaluator from "./base-evaluator";
-import LambdaEvaluator from "./lambda-evaluator";
 
 export default class DefineEvaluator implements IEvaluator {
     constructor(private evaluator: BaseEvaluator) {  }
@@ -11,15 +10,41 @@ export default class DefineEvaluator implements IEvaluator {
         return BaseEvaluator.isTaggedList(node, 'define');
     }
 
+    public static makeProc(name: SvSymbol, envClosure: Env, params: Sv, body: Sv ){
+        return new SvProcedure(
+            name, 
+            (args: Sv, stackFrame: StackFrame, evaluator: BaseEvaluator, cont: Cont) => {
+                const newEnv = new Env(envClosure, name, stackFrame);
+                let paramsT = params;
+
+                while (!SvCons.isNil(args) || !SvCons.isNil(paramsT)) {
+                    if (SvCons.isNil(args))
+                        throw new Error('not enough argument');
+                    if (SvCons.isNil(paramsT))
+                        throw new Error('too many arguments');
+                    const parameter = SvSymbol.val(SvCons.car(paramsT));
+                    const arg = SvCons.car(args);
+                    newEnv.define(parameter, arg);
+
+                    paramsT = SvCons.cdr(paramsT);
+                    args = SvCons.cdr(args);
+                }
+
+                return evaluator.evaluateList(body, newEnv, cont);
+            }
+        );
+    }
     public evaluate(sv: Sv, env: Env, cont: Cont): Sv {
 
         if (SvCons.matches(this.getHead(sv))) {
-            //implicit lambda definition
-            var lambda = LambdaEvaluator.createCompoundProcedure(
-                this.getFunctionName(sv) as SvSymbol, this.getLambdaParameters(sv), this.getLambdaBody(sv), env);
-            env.define(
-                SvSymbol.val(this.getFunctionName(sv)),
-                lambda);
+            const name = SvSymbol.cast(this.getFunctionName(sv));
+            const lambda = DefineEvaluator.makeProc(
+                name, 
+                env, 
+                this.getLambdaParameters(sv), 
+                this.getLambdaBody(sv)
+            )
+            env.define(name._val, lambda);
             return new SvContinuable(cont, lambda);
         }
         else {

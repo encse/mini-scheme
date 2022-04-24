@@ -1,6 +1,6 @@
 import { StackFrame, Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvCons, SvContinuable, SvSymbol, SvAny } from "./sv";
+import { Sv, SvCons, SvContinuable, SvSymbol, SvAny, SvProcedure } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 
 export default class ApplicationEvaluator implements IEvaluator {
@@ -13,10 +13,7 @@ export default class ApplicationEvaluator implements IEvaluator {
 
     public static evalCall(operator: Sv, args: Sv, stackFrameCurrent: StackFrame, cont: Cont, evaluator: BaseEvaluator): Sv {
 
-        if (this.isPrimitiveProcedure(operator)) {
-            return new SvContinuable(cont, this.getPrimitiveProcedureDelegate(operator)(args));
-        }
-        else if (this.isContinuation(operator)) {
+       if (this.isContinuation(operator)) {
             let arg: Sv = SvCons.Nil;
             if (!SvCons.isNil(args)) {
                 if (!SvCons.isNil(SvCons.cdr(args)))
@@ -24,35 +21,17 @@ export default class ApplicationEvaluator implements IEvaluator {
                 arg = SvCons.car(args);
             }
             return this.getContinuationFromCapturedContinuation(operator)(arg);
-        }
-        else if (this.isCompoundProcedure(operator)) {
-            const newEnv = new Env(this.getProcedureEnv(operator), this.getProcedureSymbol(operator), stackFrameCurrent);
-            let params = this.getProcedureParameters(operator);
-
-            while (!SvCons.isNil(args) || !SvCons.isNil(params)) {
-                if (SvCons.isNil(args))
-                    throw new Error('not enough argument');
-                if (SvCons.isNil(params))
-                    throw new Error('too many arguments');
-                const parameter = SvSymbol.val(SvCons.car(params));
-                const arg = SvCons.car(args);
-                newEnv.define(parameter, arg);
-
-                params = SvCons.cdr(params);
-                args = SvCons.cdr(args);
-            }
-            return evaluator.evaluateList(this.getProcedureBody(operator), newEnv, cont);
-        }
-        else
+        } else if (SvProcedure.matches(operator)) {
+            return operator.delegate(args, stackFrameCurrent, evaluator, cont);
+        } else {
             throw new Error('undefined procedure ' + operator.toString());
+        }
     }
-
 
     public evaluate(sv: Sv, env: Env, cont: Cont): Sv {
         return this.evaluator.evaluate(ApplicationEvaluator.getOperator(sv), env, (operator: Sv) => {
 
-            if (!ApplicationEvaluator.isPrimitiveProcedure(operator) &&
-                !ApplicationEvaluator.isCompoundProcedure(operator) &&
+            if (!SvProcedure.matches(operator) &&
                 !ApplicationEvaluator.isContinuation(operator))
                 throw new Error('undefined procedure ' + ApplicationEvaluator.getOperator(sv).toString());
 
@@ -62,14 +41,6 @@ export default class ApplicationEvaluator implements IEvaluator {
 
     }
 
-    private static isCompoundProcedure(expr: Sv) {
-        return BaseEvaluator.isTaggedList(expr, 'procedure');
-
-    }
-    private static isPrimitiveProcedure(expr: Sv) {
-        return BaseEvaluator.isTaggedList(expr, 'primitive');
-
-    }
     private static isContinuation(expr: Sv) {
         return BaseEvaluator.isTaggedList(expr, 'captured-continuation');
 
@@ -78,11 +49,6 @@ export default class ApplicationEvaluator implements IEvaluator {
         return SvAny.val(SvCons.cdr(expr));
     }
 
-    private static getProcedureSymbol(expr: Sv): SvSymbol { return SvSymbol.cast(SvCons.cadr(expr)); }
-    private static getProcedureParameters(expr: Sv) { return SvCons.caddr(expr); }
-    private static getProcedureBody(expr: Sv) { return SvCons.cadddr(expr); }
-    private static getProcedureEnv(expr: Sv): Env { return SvAny.val(SvCons.caddddr(expr)); }
-    private static getPrimitiveProcedureDelegate(expr: Sv) { return SvAny.val(SvCons.cdr(expr)); }
     private static getOperator(expr: Sv) { return SvCons.car(expr); }
     private static getArguments(expr: Sv) { return SvCons.cdr(expr); }
 

@@ -1,4 +1,5 @@
-﻿import { Env } from "./env";
+﻿import BaseEvaluator from "./base-evaluator";
+import { Env, StackFrame } from "./env";
 import { Cont } from "./ievaluator";
 import { ISourceInfo } from "./parser";
 
@@ -52,6 +53,7 @@ export class SvBreakpoint extends Sv {
     public env(): Env {
         return this._env;
     } 
+
     public val(): () => Sv {
         return this._val;
     }
@@ -62,6 +64,20 @@ export class SvBreakpoint extends Sv {
 
     public toDisplayString(): string {
         return '';
+    }
+}
+
+export class SvProcedure extends Sv {
+
+    constructor(
+        readonly name: SvSymbol, 
+        public delegate: (args: Sv, stackFrame: StackFrame, evaluator: BaseEvaluator, cont: Cont) => Sv
+    ) {
+        super();
+    }
+
+    public static matches(sv: Sv): sv is SvProcedure {
+        return sv instanceof SvProcedure;
     }
 }
 
