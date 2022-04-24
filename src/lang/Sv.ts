@@ -202,7 +202,7 @@ export class SvAny extends Sv {
     }
 
     public toDisplayString(): string {
-        return '[any]';
+        return 'builtin';
     }
     public toString(): string {
         return this._val.toString();
