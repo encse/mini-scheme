@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvBreakpoint, SvThunk } from "./sv";
+import { Sv, SvBreakpoint, SvContinuable } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 
     
@@ -13,6 +13,6 @@ export default class BreakpointEvaluator implements IEvaluator {
     }
 
     public evaluate(sv: Sv, env: Env, cont: Cont): Sv {
-        return new SvThunk(cont, SvBreakpoint.cast(sv).val()());
+        return new SvContinuable(cont, SvBreakpoint.cast(sv).val()());
     }
 }

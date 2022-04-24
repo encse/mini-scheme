@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { Parser } from "./parser";
-import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvThunk, SvString } from "./sv";
+import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvContinuable, SvString } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 import ApplicationEvaluator from "./application-evaluator";
 import BeginEvaluator from "./begin-evaluator";
@@ -52,18 +52,17 @@ export class Interpreter {
             return SvCons.Nil;
         })));
 
-        env.define('newline', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
-            log('\n');
-            return SvCons.Nil;
-        })));
-
         env.define('ask', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
-            return new SvNumber(parseInt(prompt(SvString.val(SvCons.car(args))), 10));
-        })));
+            let msg = "";
+            while (!SvCons.isNil(args)) {
+                msg += SvCons.car(args).toDisplayString();
+                args = SvCons.cdr(args);
+            }
 
-        env.define('tell', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
-            alert(SvCons.car(args).toDisplayString());
-            return SvCons.Nil;
+            log("> " + msg + " ");
+            const answer = parseInt(prompt(msg), 10);
+            log(answer + "\n");
+            return new SvNumber(answer);
         })));
 
         this.evaluator = new BaseEvaluator();
@@ -95,8 +94,8 @@ export class Interpreter {
 
         if (SvBreakpoint.matches(sv)) {
             sv = SvBreakpoint.cast(sv).val()();
-            while (SvThunk.matches(sv))
-                sv = SvThunk.call(sv);
+            while (SvContinuable.matches(sv))
+                sv = SvContinuable.call(sv);
         }
     
         return SvBreakpoint.matches(sv) ? sv : null;

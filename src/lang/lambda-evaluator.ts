@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvSymbol, SvThunk, SvCons, SvAny } from "./sv";
+import { Sv, SvSymbol, SvContinuable, SvCons, SvAny } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 
 export default class LambdaEvaluator implements IEvaluator {
@@ -16,7 +16,7 @@ export default class LambdaEvaluator implements IEvaluator {
             LambdaEvaluator.getLambdaParameters(sv),
             LambdaEvaluator.getLambdaBody(sv),
             env);
-        return new SvThunk(cont, proc);
+        return new SvContinuable(cont, proc);
     }
 
     public static createCompoundProcedure(name:SvSymbol, params: Sv, body: Sv, env: Env):Sv {

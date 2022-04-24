@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvString, SvBool, SvNumber, SvCons, SvThunk } from "./sv";
+import { Sv, SvString, SvBool, SvNumber, SvCons, SvContinuable } from "./sv";
 
 export default class SelfEvaluator implements IEvaluator {
     public matches(node: Sv): boolean {
@@ -9,6 +9,6 @@ export default class SelfEvaluator implements IEvaluator {
     }
 
     public evaluate(sv: Sv, env: Env, cont: Cont): Sv {
-        return new SvThunk(cont, sv);
+        return new SvContinuable(cont, sv);
     }
 }

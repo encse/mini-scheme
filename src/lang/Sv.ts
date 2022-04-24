@@ -26,17 +26,17 @@ export class SvAtom extends Sv {
     public static matches(node: Sv) { return !SvCons.matches(node); }
 }
 
-export class SvThunk extends Sv {
+export class SvContinuable extends Sv {
     public constructor(private cont: Cont, private val: Sv) { super(); }
 
-    public static matches(node: Sv) { return node instanceof SvThunk; }
+    public static matches(node: Sv) { return node instanceof SvContinuable; }
 
-    public static cast(sv: Sv): SvThunk {
-        if (!SvThunk.matches(sv)) throw new Error("Breakpoint expected");
-        return sv as SvThunk;
+    public static cast(sv: Sv): SvContinuable {
+        if (!SvContinuable.matches(sv)) throw new Error("Cont expected");
+        return sv as SvContinuable;
     }
     public static call(sv: Sv) {
-        return SvThunk.cast(sv).cont((sv as SvThunk).val);
+        return SvContinuable.cast(sv).cont((sv as SvContinuable).val);
     }
 }
 export class SvBreakpoint extends Sv {
@@ -167,7 +167,6 @@ export class SvCons extends Sv {
         while (!SvCons.isNil(rv)) {
             if (!first)
                 st += " ";
-            first = false;
 
             if (SvCons.matches(rv)) {
                 st += dgDisplay(SvCons.car(rv));
@@ -180,6 +179,8 @@ export class SvCons extends Sv {
                 st += dgDisplay(rv);
                 break;
             }
+            first = false;
+
         }
         st += ')';
         return st;

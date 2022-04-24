@@ -1,6 +1,6 @@
 import { StackFrame, Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvCons, SvThunk, SvSymbol, SvAny } from "./sv";
+import { Sv, SvCons, SvContinuable, SvSymbol, SvAny } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 
 export default class ApplicationEvaluator implements IEvaluator {
@@ -14,7 +14,7 @@ export default class ApplicationEvaluator implements IEvaluator {
     public static evalCall(operator: Sv, args: Sv, stackFrameCurrent: StackFrame, cont: Cont, evaluator: BaseEvaluator): Sv {
 
         if (this.isPrimitiveProcedure(operator)) {
-            return new SvThunk(cont, this.getPrimitiveProcedureDelegate(operator)(args));
+            return new SvContinuable(cont, this.getPrimitiveProcedureDelegate(operator)(args));
         }
         else if (this.isContinuation(operator)) {
             let arg: Sv = SvCons.Nil;
@@ -90,7 +90,7 @@ export default class ApplicationEvaluator implements IEvaluator {
         const evaluatedArgs = new SvCons(null, null);
         const loop = (evaluatedArgsLast: Sv, args: Sv): Sv => {
             if (SvCons.isNil(args)) {
-                return new SvThunk(cont, evaluatedArgs);
+                return new SvContinuable(cont, evaluatedArgs);
             }
             return this.evaluator.evaluate(SvCons.car(args), env, (evaluatedArg: Sv) => {
                 SvCons.setCar(evaluatedArgsLast, evaluatedArg);

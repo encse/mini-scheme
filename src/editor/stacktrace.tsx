@@ -26,10 +26,18 @@ export const Stacktrace: React.FC<StacktraceProps> = (props) => {
         while (env != null && env.getSvSymbolProcedure() == null)
             env = env.getEnvParent();
 
+        let msg = "(anonymous)";
+        if (env != null){
+            msg = '('+env.getSvSymbolProcedure().toString();
+            for(let param of env.getNames()) {
+                msg += ' ' + env.get(param).toString()
+            }
+            msg += ')'
+        }
         const classes = 'sicp-stack-frame ' + ((currentStackFrame === debuggerState.currentStackFrameIndex) ? 'sicp-stack-frame-current' : '');
         frameElements.push(
             <div className={classes} key={stackFrameIndex} onClick={() => props.onStackFrameSelect(currentStackFrame)}>
-                <p>{!env ? "(anonymous)" : env.getSvSymbolProcedure().toString()}</p>
+                <p>{msg}</p>
             </div>
         );
         stackFrame = stackFrame.parent();

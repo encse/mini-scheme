@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvBreakpoint, SvCons, SvThunk, SvSymbol } from "./sv";
+import { Sv, SvBreakpoint, SvCons, SvContinuable, SvSymbol } from "./sv";
 
 export default class BaseEvaluator implements IEvaluator {
     private stepCount: number = 1;
@@ -40,7 +40,7 @@ export default class BaseEvaluator implements IEvaluator {
         var lastSv: Sv = SvCons.Nil;
         var loop = (exprs: Sv): Sv => {
             if (SvCons.isNil(exprs))
-                return new SvThunk(cont, lastSv);
+                return new SvContinuable(cont, lastSv);
 
             return this.evaluate(SvCons.car(exprs), env, (sv: Sv) => {
                 lastSv = sv;

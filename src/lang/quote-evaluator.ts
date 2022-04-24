@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvCons, SvThunk } from "./sv";
+import { Sv, SvCons, SvContinuable } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 
 export default class QuoteEvaluator implements IEvaluator {
@@ -11,6 +11,6 @@ export default class QuoteEvaluator implements IEvaluator {
 
     public evaluate(sv: Sv, env: Env, cont: Cont): Sv {
         var res = SvCons.cdr(sv);
-        return new SvThunk(cont, res);
+        return new SvContinuable(cont, res);
     }
 }

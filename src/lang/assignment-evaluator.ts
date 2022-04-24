@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvSymbol, SvThunk, SvCons } from "./sv";
+import { Sv, SvSymbol, SvContinuable, SvCons } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 
 export default class AssignmentEvaluator implements IEvaluator {
@@ -16,7 +16,7 @@ export default class AssignmentEvaluator implements IEvaluator {
             env.set(
                 SvSymbol.val(this.getVariable(sv)),
                 svValue);
-            return new SvThunk(cont, svValue);
+            return new SvContinuable(cont, svValue);
         });
     }
 

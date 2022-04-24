@@ -4,11 +4,12 @@
     (even?
         (lambda (n)
             (if (zero? n)
-                (tell "It is even.")
+                (display num " is even.\n")
                 (odd? (- n 1)))))
     (odd?
         (lambda (n)
             (if (zero? n)
-                (tell "It is odd.")
-                (even? (- n 1))))))
-    (display (even? (ask "Enter a number"))))
+                (display num " is odd.\n")
+                (even? (- n 1)))))
+    (num (ask "Enter a non negative integer:")))
+    (even? num))

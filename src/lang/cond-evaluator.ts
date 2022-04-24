@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvCons, SvThunk, SvBool } from "./sv";
+import { Sv, SvCons, SvContinuable, SvBool } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 
 export default class CondEvaluator implements IEvaluator {
@@ -19,7 +19,7 @@ export default class CondEvaluator implements IEvaluator {
 
         var loop = (clauses: Sv): Sv => {
             if (SvCons.isNil(clauses))
-                return new SvThunk(cont, clauses);
+                return new SvContinuable(cont, clauses);
 
             var clause = SvCons.car(clauses);
             if (this.isCondElseClause(clause))

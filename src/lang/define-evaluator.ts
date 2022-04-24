@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvCons, SvSymbol, SvThunk } from "./sv";
+import { Sv, SvCons, SvSymbol, SvContinuable } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 import LambdaEvaluator from "./lambda-evaluator";
 
@@ -20,14 +20,14 @@ export default class DefineEvaluator implements IEvaluator {
             env.define(
                 SvSymbol.val(this.getFunctionName(sv)),
                 lambda);
-            return new SvThunk(cont, lambda);
+            return new SvContinuable(cont, lambda);
         }
         else {
             return this.evaluator.evaluate(this.getValue(sv), env, (svValue: Sv):Sv => {
                 env.define(
                     SvSymbol.val(this.getVariable(sv)),
                     svValue);
-                return new SvThunk(cont, svValue);
+                return new SvContinuable(cont, svValue);
             });
         }
     }

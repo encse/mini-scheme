@@ -7,7 +7,7 @@
 	(return 2)
 	3)
 (display (f (lambda (x) x))) ; displays 3
-(newline)
+(display "\n")
 (display (call-with-current-continuation f)) ; displays 2
 
 ; Calling f with a regular function argument first applies this function to the value 2, 
