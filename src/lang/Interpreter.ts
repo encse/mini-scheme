@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { Parser } from "./parser";
-import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvThunk } from "./sv";
+import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvThunk, SvString } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 import ApplicationEvaluator from "./application-evaluator";
 import BeginEvaluator from "./begin-evaluator";
@@ -51,10 +51,21 @@ export class Interpreter {
             }
             return SvCons.Nil;
         })));
+
         env.define('newline', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
             log('\n');
             return SvCons.Nil;
         })));
+
+        env.define('ask', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
+            return new SvNumber(parseInt(prompt(SvString.val(SvCons.car(args))), 10));
+        })));
+
+        env.define('tell', new SvCons(new SvSymbol('primitive'), new SvAny((args: any) => {
+            alert(SvCons.car(args).toDisplayString());
+            return SvCons.Nil;
+        })));
+
         this.evaluator = new BaseEvaluator();
         this.evaluator.setEvaluators([
             new BreakpointEvaluator(this.evaluator),

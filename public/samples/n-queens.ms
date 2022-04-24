@@ -48,11 +48,12 @@
                  (cond
                    ((null? sol) '())
                    (else (begin 
-                        (display sol " ")
+                        (display sol "\n")
                         (cons sol (loop (backtrack sol boardsize)))))))))
       (loop (build-solution '() boardsize))))
 
 (define (queens n)
+    (display "Valid positions for " n " queens:\n")
     (build-all-solutions n))
     
 (queens 8)

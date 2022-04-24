@@ -244,14 +244,6 @@ body {
     font-weight: bold;
 }
 
-.sicp-stack-frame:nth-child(even) {
-    background: white;
-}
-
-.sicp-stack-frame:nth-child(odd) {
-    background: #ebebeb;
-}
-
 .sicp-stack-frame:hover {
     background: lightgray;
 }

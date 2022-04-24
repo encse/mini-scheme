@@ -11,7 +11,9 @@ export type StacktraceProps = {
 export const Stacktrace: React.FC<StacktraceProps> = (props) => {
     const debuggerState = props.debuggerState;
     if (debuggerState.kind !== "paused" || !SvBreakpoint.matches(debuggerState.sv)) {
-        return <div />
+        return  <div className="sicp-stack-frame">
+            <p>not paused</p>
+        </div>;
     }
 
     const sv = debuggerState.sv;
@@ -27,7 +29,7 @@ export const Stacktrace: React.FC<StacktraceProps> = (props) => {
         const classes = 'sicp-stack-frame ' + ((currentStackFrame === debuggerState.currentStackFrameIndex) ? 'sicp-stack-frame-current' : '');
         frameElements.push(
             <div className={classes} key={stackFrameIndex} onClick={() => props.onStackFrameSelect(currentStackFrame)}>
-                <p>{!env ? "« not in procedure »" : env.getSvSymbolProcedure().toString()}</p>
+                <p>{!env ? "(anonymous)" : env.getSvSymbolProcedure().toString()}</p>
             </div>
         );
         stackFrame = stackFrame.parent();

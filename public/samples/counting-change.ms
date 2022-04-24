@@ -21,4 +21,5 @@
         ((= kinds-of-coins 4) 25)
         ((= kinds-of-coins 5) 50)))
         
+(display "> How many different ways can we make change of $1.00 given half-dollars, quarters, dimes, nickels, and pennies?\n")
 (display (count-change 100))

@@ -11,4 +11,4 @@
 		(newline)
         (tower-of-hanoi (- n 1) temp dest source))))
 
-(tower-of-hanoi 3 "source" "dest" "temp")
+(tower-of-hanoi (ask "Number of disks? [1-10]") "source" "dest" "temp")

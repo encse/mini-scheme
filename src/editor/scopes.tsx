@@ -10,7 +10,7 @@ export const Scopes: React.FC<ScopesProps> = (props) => {
     const debuggerState = props.debuggerState;
     let stackFrame = getCurrentStackFrame(debuggerState)
     if (stackFrame == null) {
-        return <div />;
+        return <div className="sicp-stack-frame"><p>not paused</p></div>;
     }
 
     let env = stackFrame.env();

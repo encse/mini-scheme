@@ -205,7 +205,7 @@ export class Editor extends React.PureComponent<EditorProps, EditorState> {
                         <div id="output-content" className="sicp-box-tab-content"><NewLineText text={logger.output} /></div>
                     </div>
                     <div className="sicp-box">
-                        <p className="sicp-box-tab-title">Stacktrace</p>
+                        <p className="sicp-box-tab-title">Call Stack</p>
                         <div id="stacktrace-content" className="sicp-box-tab-content">
                             <Stacktrace debuggerState={debuggerState} onStackFrameSelect={this.setStackFrameIndex} />
                         </div>
