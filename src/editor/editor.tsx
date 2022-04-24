@@ -6,7 +6,7 @@ import "brace/theme/tomorrow_night";
 import { Interpreter } from '../lang/interpreter';
 import { SvBreakpoint } from '../lang/sv';
 import { IMarker } from 'react-ace/lib/types';
-import { DebuggerState } from './debugger-state';
+import { DebuggerState, getCurrentStackFrame } from './debugger-state';
 import { Toolbar } from './toolbar';
 import { Scopes } from './scopes';
 import { Stacktrace } from './stacktrace';
@@ -119,7 +119,7 @@ export class Editor extends React.PureComponent<EditorProps, EditorState> {
         this.setState({ program });
     }
 
-    updateDebugger = () => {
+    stepInterpreter = () => {
         const { debuggerState, interpreter, logger, program } = this.state;
 
         if (debuggerState.kind === "running" || debuggerState.kind === "step") {
@@ -144,7 +144,7 @@ export class Editor extends React.PureComponent<EditorProps, EditorState> {
                 }
             } catch (ex) {
                 console.log(ex);
-                logger.log("\nan error occured");
+                logger.log("\n" + ex);
                 this.setState({ debuggerState: { kind: "stopped" } });
             }
         }
@@ -154,21 +154,22 @@ export class Editor extends React.PureComponent<EditorProps, EditorState> {
         const { samples, debuggerState, editorRef, logger, program } = this.state;
 
         if (debuggerState.kind === "running" || debuggerState.kind === "step") {
-            setTimeout(this.updateDebugger, 0);
+            setTimeout(this.stepInterpreter, 0);
         }
 
         const markers: IMarker[] = [];
 
-        if (debuggerState.kind === "paused") {
+        const stackFrame = getCurrentStackFrame(debuggerState);
+        if (debuggerState.kind === "paused" && stackFrame != null) {
             markers.push({
-                startRow: debuggerState.sv.ilineStart,
-                endRow: debuggerState.sv.ilineEnd,
-                startCol: debuggerState.sv.icolStart,
-                endCol: debuggerState.sv.icolEnd,
+                startRow: stackFrame.sv().ilineStart,
+                endRow: stackFrame.sv().ilineEnd,
+                startCol: stackFrame.sv().icolStart,
+                endCol: stackFrame.sv().icolEnd,
                 className: "current-statement",
                 type: "text"
-            })
-            editorRef.current?.editor.gotoLine(debuggerState.sv.ilineStart);
+            });
+            editorRef.current?.editor.gotoLine(stackFrame.sv().ilineStart);
         }
 
         return (
@@ -180,7 +181,7 @@ export class Editor extends React.PureComponent<EditorProps, EditorState> {
                         onRun={debuggerState.kind === "stopped" ? this.run : null}
                         onStop={debuggerState.kind === "paused" || debuggerState.kind === "running" ? this.stop : null}
                         onPause={debuggerState.kind === "running" ? this.pause : null}
-                        onStep={debuggerState.kind === "paused" ? this.step : null}
+                        onStep={debuggerState.kind === "paused" || debuggerState.kind === "stopped" ? this.step : null}
                         onContinue={debuggerState.kind === "paused" ? this.cont : null}
                     />
                     <AceEditor
