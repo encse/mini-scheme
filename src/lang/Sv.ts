@@ -23,13 +23,13 @@ export class Sv implements ISourceInfo {
 }
 
 export class SvAtom extends Sv {
-    public static matches(node: Sv) { return !SvCons.matches(node); }
+    public static matches(sv: Sv) : sv is SvAtom { return !SvCons.matches(sv); }
 }
 
 export class SvContinuable extends Sv {
     public constructor(private cont: Cont, private val: Sv) { super(); }
 
-    public static matches(node: Sv) { return node instanceof SvContinuable; }
+    public static matches(sv: Sv) : sv is SvContinuable { return sv instanceof SvContinuable; }
 
     public static cast(sv: Sv): SvContinuable {
         if (!SvContinuable.matches(sv)) throw new Error("Cont expected");
@@ -82,7 +82,7 @@ export class SvCons extends Sv {
         return res;
     }
 
-    public static matches(node: Sv) {
+    public static matches(node: Sv) : node is SvCons {
             return node instanceof SvCons;
     }
 
@@ -191,7 +191,7 @@ export class SvCons extends Sv {
 export class SvAny extends Sv {
     public constructor(public _val: any) { super(); }
 
-    public static matches(node: Sv) { return node instanceof SvAny; }
+    public static matches(node: Sv) : node is SvAny { return node instanceof SvAny; }
 
     public static val(sv: Sv) {
         return SvAny.cast(sv)._val;
@@ -215,7 +215,7 @@ export class SvBool extends Sv {
     public static False = new SvBool(false);
     constructor(public _val: boolean) { super(); }
 
-    public static matches(node: Sv) { return node instanceof SvBool; }
+    public static matches(node: Sv) : node is SvBool { return node instanceof SvBool; }
 
     public static isTrue(node: Sv) {
         return SvBool.matches(node) && SvBool.val(node);
@@ -276,7 +276,7 @@ export class SvBool extends Sv {
 export class SvString extends Sv {
     public constructor(public _val: string) { super(); }
 
-    public static matches(node: Sv) { return node instanceof SvString; }
+    public static matches(node: Sv) : node is SvString { return node instanceof SvString; }
 
     public static val(sv: Sv) {
         return SvString.cast(sv)._val;
@@ -299,7 +299,7 @@ export class SvString extends Sv {
 export class SvNumber extends Sv {
     public constructor(public _val: number) { super(); }
 
-    public static matches(node: Sv) { return node instanceof SvNumber; }
+    public static matches(node: Sv) : node is SvNumber { return node instanceof SvNumber; }
 
     public static val(node: Sv) {
         return SvNumber.cast(node)._val;
@@ -323,7 +323,7 @@ export class SvNumber extends Sv {
 export class SvSymbol extends Sv {
     public constructor(public _val: string) { super(); }
 
-    public static matches(node: Sv) { return node instanceof SvSymbol; }
+    public static matches(node: Sv) : node is SvSymbol { return node instanceof SvSymbol; }
 
     public static val(node: Sv) {
         return SvSymbol.cast(node)._val;

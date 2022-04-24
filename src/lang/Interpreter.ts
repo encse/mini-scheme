@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { Parser } from "./parser";
-import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvContinuable, SvString } from "./sv";
+import { SvCons, SvSymbol, SvAny, SvBool, SvNumber, Sv, SvBreakpoint, SvContinuable } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 import ApplicationEvaluator from "./application-evaluator";
 import BeginEvaluator from "./begin-evaluator";
@@ -93,7 +93,7 @@ export class Interpreter {
         this.evaluator.setStepCount(stepCount);
 
         if (SvBreakpoint.matches(sv)) {
-            sv = SvBreakpoint.cast(sv).val()();
+            sv = sv.val()();
             while (SvContinuable.matches(sv))
                 sv = SvContinuable.call(sv);
         }
