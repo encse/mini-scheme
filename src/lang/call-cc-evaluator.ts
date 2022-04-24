@@ -1,6 +1,6 @@
 import { Env, StackFrame } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvCons, SvSymbol, SvAny } from "./sv";
+import { Sv, SvCons, SvSymbol, SvProcedure } from "./sv";
 import ApplicationEvaluator from "./application-evaluator";
 import BaseEvaluator from "./base-evaluator";
 
@@ -23,6 +23,17 @@ export default class CallCCEvaluator implements IEvaluator {
     getLambda(sv: Sv) { return SvCons.cadr(sv); }
 
     private static createCcProcedure(cont: Cont): Sv {
-        return new SvCons(new SvSymbol('captured-continuation'), new SvAny(cont));
+        return new SvProcedure(
+            new SvSymbol('captured-continuation'),
+            (args: Sv) => {
+                let arg: Sv = SvCons.Nil;
+                if (!SvCons.isNil(args)) {
+                    if (!SvCons.isNil(SvCons.cdr(args)))
+                        throw new Error('too many arguments');
+                    arg = SvCons.car(args);
+                }
+                return cont(arg);
+            }
+        );
     }
 }

@@ -76,6 +76,10 @@ export class SvProcedure extends Sv {
         super();
     }
 
+    public toString(): string {
+        return `(fn ${this.name})`;
+    }
+
     public static matches(sv: Sv): sv is SvProcedure {
         return sv instanceof SvProcedure;
     }
@@ -104,10 +108,6 @@ export class SvCons extends Sv {
 
     public static isNil(node: Sv) {
         return node === SvCons.Nil || (SvCons.matches(node) && SvCons.car(node) === null && SvCons.cdr(node) === null);
-    }
-
-    public static val(sv: Sv) {
-        return SvAny.cast(sv)._val;
     }
 
     public static cast(sv: Sv): SvCons {
@@ -202,28 +202,6 @@ export class SvCons extends Sv {
         return st;
     }
 
-}
-
-export class SvAny extends Sv {
-    public constructor(public _val: any) { super(); }
-
-    public static matches(node: Sv) : node is SvAny { return node instanceof SvAny; }
-
-    public static val(sv: Sv) {
-        return SvAny.cast(sv)._val;
-    }
-
-    public static cast(sv: Sv): SvAny {
-        if (!SvAny.matches(sv)) throw new Error("any expected");
-        return sv as SvAny;
-    }
-
-    public toDisplayString(): string {
-        return 'builtin';
-    }
-    public toString(): string {
-        return this._val.toString();
-    }
 }
 
 export class SvBool extends Sv {
