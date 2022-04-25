@@ -3,7 +3,7 @@ My Scheme-like toy programming language written in TypeScript. The project was g
 
 The most iteresting part, that actually made me to implement this, was the `call-with-current-continuation` construct or `call/cc` for short (experienced lispers and schemers are now probably banging their heads against the wall because I’m not drawing a clear difference between the two). I just wanted to play with this construct a bit so that I understand it better. Also I haven't written an interpreter that supported anything like that before, so it was the best time to start.
 
-Since a simple interpreter would have been too simple and not very interesting to demo, I also added an editor (built on [ACE](https://ace.c9.io/#nav=about)) and some very limited debug functionality.
+Since a simple interpreter would have been too simple and not very interesting to demo, I also added an editor (built on [ACE](https://ace.c9.io/#nav=about)) and some rudimentary debug functionality.
 
 ## Getting Started
 
