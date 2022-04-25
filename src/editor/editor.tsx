@@ -78,9 +78,9 @@ export class Editor extends React.PureComponent<EditorProps, EditorState> {
     step = () => {
         const { debuggerState } = this.state;
         if (debuggerState.kind === "paused") {
-            this.setState({ debuggerState: { ...debuggerState, kind: "step" } });
+            this.stepInterpreter({ ...this.state, debuggerState: { ...debuggerState, kind: "step" } });
         } else if (debuggerState.kind === "stopped") {
-            this.setState({ debuggerState: { kind: "step", sv: null } });
+            this.stepInterpreter({ ...this.state, debuggerState: { kind: "step", sv: null } });
         }
     };
 
@@ -119,8 +119,8 @@ export class Editor extends React.PureComponent<EditorProps, EditorState> {
         this.setState({ program });
     }
 
-    stepInterpreter = () => {
-        const { debuggerState, interpreter, logger, program } = this.state;
+    stepInterpreter = (state: EditorState) => {
+        const { debuggerState, interpreter, logger, program } = state;
 
         if (debuggerState.kind === "running" || debuggerState.kind === "step") {
             try {
@@ -154,7 +154,7 @@ export class Editor extends React.PureComponent<EditorProps, EditorState> {
         const { samples, debuggerState, editorRef, logger, program } = this.state;
 
         if (debuggerState.kind === "running" || debuggerState.kind === "step") {
-            setTimeout(this.stepInterpreter, 0);
+            setTimeout(() => this.stepInterpreter(this.state), 0);
         }
 
         const markers: IMarker[] = [];
