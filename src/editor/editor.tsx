@@ -3,8 +3,8 @@ import AceEditor from "react-ace";
 
 import "brace/mode/typescript";
 import "brace/theme/tomorrow_night";
-import { Interpreter } from '../lang/interpreter';
-import { SvBreakpoint } from '../lang/sv';
+import { Interpreter } from '../lang/interpreter2';
+import { SvBreakpoint } from '../lang/sv2';
 import { IMarker } from 'react-ace/lib/types';
 import { DebuggerState, getCurrentStackFrame } from './debugger-state';
 import { Toolbar } from './toolbar';

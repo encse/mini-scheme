@@ -1,6 +1,6 @@
 import React from 'react';
 import { StackFrame } from "../lang/env";
-import { SvBreakpoint } from "../lang/sv";
+import { SvBreakpoint } from "../lang/sv2";
 import { DebuggerState } from "./debugger-state";
 
 export type StacktraceProps = {
