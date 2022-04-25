@@ -1,5 +1,5 @@
 import { StackFrame } from "../lang/env";
-import { Sv, SvBreakpoint } from "../lang/sv2";
+import { Sv, SvBreakpoint } from "../lang/sv";
 
 export type DebuggerState = {
     kind: "stopped"

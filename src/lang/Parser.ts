@@ -1,4 +1,4 @@
-﻿import { SvCons, Sv, SvSymbol, SvBool, SvNumber, SvString } from "./sv2";
+﻿import { SvCons, Sv, SvSymbol, SvBool, SvNumber, SvString } from "./sv";
 
 enum TokenKind {
     WhiteSpace,

@@ -1,6 +1,6 @@
 import { Env, StackFrame } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvCons, SvSymbol, SvContinuable, SvProcedure } from "./sv2";
+import { Sv, SvCons, SvSymbol, SvContinuable, SvProcedure } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 
 export default class DefineEvaluator implements IEvaluator {

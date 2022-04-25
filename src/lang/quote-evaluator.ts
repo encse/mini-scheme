@@ -1,6 +1,6 @@
 import { Env } from "./env";
 import { IEvaluator, Cont } from "./ievaluator";
-import { Sv, SvCons, SvContinuable } from "./sv2";
+import { Sv, SvCons, SvContinuable } from "./sv";
 import BaseEvaluator from "./base-evaluator";
 
 export default class QuoteEvaluator implements IEvaluator {
