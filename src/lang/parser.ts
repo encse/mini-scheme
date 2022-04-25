@@ -77,8 +77,10 @@ export class Parser {
         if (this.accept(TokenKind.BooleanLit)) 
             return SvBool.fromBoolean(token.st === "#t").withSourceInfo(token, token);
         if (this.accept(TokenKind.NumberLit))
+            // eslint-disable-next-line
             return new SvNumber(eval(token.st)).withSourceInfo(token, token);
         if (this.accept(TokenKind.StringLit))
+            // eslint-disable-next-line
             return new SvString(eval(token.st)).withSourceInfo(token, token);
         if (this.accept(TokenKind.LParen)) {
             let tokenStart = token;

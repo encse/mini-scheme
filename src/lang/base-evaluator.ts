@@ -26,6 +26,7 @@ export default class BaseEvaluator implements IEvaluator {
             if (this.evaluators[i].matches(sv)) {
                 this.step++;
                 if (this.step % this.stepCount === 0)
+                    // eslint-disable-next-line
                     return new SvBreakpoint(() => this.evaluators[i].evaluate(sv, env, cont), env).withSourceInfo(sv, sv);
                 else
                     return this.evaluators[i].evaluate(sv, env, cont);

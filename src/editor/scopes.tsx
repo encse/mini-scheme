@@ -23,7 +23,8 @@ export const Scopes: React.FC<ScopesProps> = (props) => {
             {env.getNames().length > 0 &&
                 <div className="sicp-tree-node-content">
                     {
-                        env.getNames().map(name =>
+                        // eslint-disable-next-line
+                        env.getNames().map(name => 
                             <div key={name}>
                                 <div className="sicp-variable-name">{name}</div>
                                 <div className="sicp-variable-value">{env.get(name).toDisplayString()}</div>
