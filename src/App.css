@@ -176,6 +176,7 @@ body {
     border-top: 1px solid lightgray; 
     background: white;
     flex-grow: 1;
+    overflow: auto;
 }
 .sicp-box-current-tab .sicp-box-tab-title {
     background: white;
@@ -250,5 +251,4 @@ body {
 
 #output-content {
     padding: 4px;
-    overflow: auto;
 }
