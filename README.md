@@ -5,6 +5,10 @@ The most iteresting part, that actually made me to implement this, was the `call
 
 Since a simple interpreter would have been too simple and not very interesting to demo, I also added an editor (built on [ACE](https://ace.c9.io/#nav=about)) and some rudimentary debug functionality.
 
+## Hosted version
+
+You can try it out right now with steering your browser to https://mini-scheme.csokavar.hu/
+
 ## Getting Started
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
